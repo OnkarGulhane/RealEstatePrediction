@@ -1,8 +1,18 @@
 # Standalone Inference Service Runtime Dependencies
-# (Training-only packages are excluded)
+# Pinned to exact compatibility with Phase 2 model artifact metadata:
+# scikit-learn==1.9.1, pandas==2.2.3, numpy==2.4.3, joblib==1.6.0
+scikit-learn==1.9.1
+pandas==2.2.3
+numpy==2.4.3
+joblib==1.6.0
+
+# Service & API framework
 fastapi>=0.115.0,<0.116.0
 uvicorn[standard]>=0.32.0,<0.33.0
 pydantic>=2.10.0,<3.0.0
 pydantic-settings>=2.6.0,<3.0.0
+
+# Testing & Client verification
 pytest>=8.3.0
 httpx>=0.28.0
+pyyaml>=6.0.0

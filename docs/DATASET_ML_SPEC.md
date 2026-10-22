@@ -4,10 +4,10 @@
 
 | Document field | Details |
 |---|---|
-| Status | Phase 2 Offline Training & Evaluation Complete (Candidate Pipeline Versioned) |
+| Status | Phase 2 Offline Training & Evaluation Approved (Candidate Pipeline Versioned) |
 | Dataset under audit | `house_prices.csv` (provided in user archive, 106,149,815 bytes) |
 | Target Variable | Continuous Listing Price in Indian Rupees (`Amount(in rupees)`) |
-| Approval Date | Phase 1 Approved (2026-10-22); Phase 2 Implementation Ready for Owner Review |
+| Approval Date | Phase 1 & Phase 2 Approved by Product Owner (2026-10-22) |
 | Provenance / Licence | **UNVERIFIED / RESTRICTED FROM REDISTRIBUTION** |
 
 ---

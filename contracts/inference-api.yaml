@@ -1,19 +1,231 @@
 openapi: 3.0.3
 info:
   title: Real Estate Price Prediction Platform — Inference Service API
-  version: 1.0.0-scaffold
+  version: 1.0.0
   description: >
     Internal inference API exposed by the standalone Python service (FastAPI) to Django REST Framework.
-    Inference is strictly decoupled from user accounts and persistent application data.
+    Inference is strictly decoupled from user accounts, persistent application databases, and training routines.
 servers:
-  - url: http://localhost:8001
-    description: Local development inference service
+  - url: http://127.0.0.1:8001
+    description: Local development loopback inference service
+
+components:
+  securitySchemes:
+    ServiceTokenAuth:
+      type: apiKey
+      in: header
+      name: X-Service-Token
+      description: Internal service authentication token for service-to-service communication.
+
+  schemas:
+    AreaBasisEnum:
+      type: string
+      enum:
+        - CARPET
+        - SUPER
+      description: Measurement basis for the property area.
+
+    PropertyPredictionRequest:
+      type: object
+      required:
+        - schema_version
+        - location
+        - area_value
+        - area_basis
+      properties:
+        schema_version:
+          type: string
+          example: "1.0"
+          description: Contract schema version. Currently accepted version is strictly "1.0".
+        location:
+          type: string
+          minLength: 1
+          example: Thane
+          description: Supported normalized Indian residential city or locality name.
+        area_value:
+          type: number
+          format: float
+          minimum: 0.0
+          exclusiveMinimum: true
+          example: 1200.0
+          description: Numerical property area in square feet. Must be strictly positive and finite.
+        area_basis:
+          $ref: '#/components/schemas/AreaBasisEnum'
+        bhk:
+          type: integer
+          minimum: 1
+          maximum: 20
+          nullable: true
+          example: 2
+          description: Bedroom count (BHK).
+        bathrooms:
+          type: number
+          format: float
+          minimum: 1.0
+          maximum: 20.0
+          nullable: true
+          example: 2.0
+          description: Bathroom count.
+        balcony:
+          type: integer
+          minimum: 0
+          maximum: 10
+          nullable: true
+          example: 1
+          description: Balcony count.
+        floor_number:
+          type: number
+          format: float
+          minimum: -2.0
+          maximum: 200.0
+          nullable: true
+          example: 2.0
+          description: Floor of the property (-1 for basement, 0 for ground).
+        total_floors:
+          type: number
+          format: float
+          minimum: 1.0
+          maximum: 200.0
+          nullable: true
+          example: 5.0
+          description: Total number of floors in the building.
+        parking_spaces:
+          type: number
+          format: float
+          minimum: 0.0
+          maximum: 500.0
+          nullable: true
+          example: 1.0
+          description: Dedicated parking spaces. Evaluated under Phase 2 Treatment B semantics.
+        furnishing:
+          type: string
+          nullable: true
+          example: Semi-Furnished
+          description: Furnishing status.
+        transaction_type:
+          type: string
+          nullable: true
+          example: Resale
+          description: Transaction type.
+        status:
+          type: string
+          nullable: true
+          example: Ready to Move
+          description: Construction or possession status.
+        facing:
+          type: string
+          nullable: true
+          example: East
+          description: Facing orientation.
+        ownership:
+          type: string
+          nullable: true
+          example: Freehold
+          description: Ownership type.
+
+    PredictionResponse:
+      type: object
+      required:
+        - request_id
+        - estimated_price_inr
+        - currency
+        - model_version
+        - schema_version
+      properties:
+        request_id:
+          type: string
+          format: uuid
+          example: 7f8b9e6a-3c2d-4e5f-a1b2-c3d4e5f6a7b8
+          description: Server-generated correlation request ID.
+        estimated_price_inr:
+          type: number
+          format: float
+          example: 8103904.75
+          description: Estimated residential listing price in Indian Rupees (INR).
+        currency:
+          type: string
+          example: INR
+          description: Currency code (INR).
+        model_version:
+          type: string
+          example: real_estate_hist_gradient_boosting_log_tuned_v1
+          description: Model identifier used for inference.
+        schema_version:
+          type: string
+          example: "1.0"
+          description: Contract schema version.
+        property_summary:
+          type: object
+          description: Echo of input attributes used during feature transformation.
+        disclaimer:
+          type: string
+          example: This estimate is generated by an offline-trained regression model based on historical listing data.
+
+    HealthLiveResponse:
+      type: object
+      required:
+        - status
+        - service
+      properties:
+        status:
+          type: string
+          example: alive
+        service:
+          type: string
+          example: inference-service
+
+    HealthReadyResponse:
+      type: object
+      required:
+        - status
+      properties:
+        status:
+          type: string
+          enum: [ready, not_ready]
+          example: ready
+        model_version:
+          type: string
+          nullable: true
+          example: real_estate_hist_gradient_boosting_log_tuned_v1
+        reason:
+          type: string
+          nullable: true
+          example: Model artifact not loaded or missing
+
+    ErrorDetail:
+      type: object
+      required:
+        - code
+        - message
+        - fields
+        - request_id
+      properties:
+        code:
+          type: string
+          example: UNSUPPORTED_LOCATION
+        message:
+          type: string
+          example: Location 'Atlantis' is not supported.
+        fields:
+          type: object
+        request_id:
+          type: string
+          format: uuid
+          example: 7f8b9e6a-3c2d-4e5f-a1b2-c3d4e5f6a7b8
+
+    ErrorResponse:
+      type: object
+      required:
+        - error
+      properties:
+        error:
+          $ref: '#/components/schemas/ErrorDetail'
 
 paths:
   /health/live:
     get:
       summary: Service Liveness Check
-      description: Returns liveness status of the inference HTTP process.
+      description: Returns process liveness independently of model readiness. Always returns 200 while HTTP process runs.
       operationId: getLiveness
       responses:
         '200':
@@ -21,92 +233,111 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  status:
-                    type: string
-                    example: alive
-                  service:
-                    type: string
-                    example: inference-service
+                $ref: '#/components/schemas/HealthLiveResponse'
 
   /health/ready:
     get:
-      summary: Service & Artifact Readiness Check
+      summary: Model Artifact Readiness Check
       description: >
-        Truthfully checks if the approved model pipeline artifact exists, is verified,
-        and is loaded in memory for inference. If no model is loaded, returns 503.
+        Truthfully checks if the approved model pipeline artifact and metadata are verified
+        and loaded in memory. If not ready, returns 503 without leaking system paths.
       operationId: getReadiness
       responses:
         '200':
-          description: Model artifact is loaded and ready for predictions.
+          description: Model artifact is loaded and verified for predictions.
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  status:
-                    type: string
-                    example: ready
-                  model_version:
-                    type: string
-                    example: v1.0.0
+                $ref: '#/components/schemas/HealthReadyResponse'
         '503':
           description: Model artifact is not ready or missing.
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  status:
-                    type: string
-                    example: not_ready
-                  reason:
-                    type: string
-                    example: Model artifact not loaded or missing
+                $ref: '#/components/schemas/HealthReadyResponse'
 
   /api/v1/predict:
     post:
       summary: Predict Residential Listing Price
       description: >
         Evaluates input property features using the loaded pipeline artifact.
-        If no model is ready, returns 503 Service Unavailable. Never returns a fabricated price.
+        Returns estimated price in INR. Never fabricates a fallback price.
       operationId: predictPrice
+      security:
+        - ServiceTokenAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PropertyPredictionRequest'
       responses:
         '200':
           description: Price estimate generated successfully.
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  estimated_price_inr:
-                    type: number
-                    example: 4500000.0
-                  currency:
-                    type: string
-                    example: INR
-                  model_version:
-                    type: string
-                    example: v1.0.0
+                $ref: '#/components/schemas/PredictionResponse'
+        '401':
+          description: Missing service authentication token.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Invalid service authentication token.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '422':
+          description: Input validation error, incompatible schema, or unsupported location/category.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Model execution failure or non-finite/non-positive model output.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
         '503':
-          description: Inference service unavailable or model not ready.
+          description: Model artifact not loaded or unavailable.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/model/metadata:
+    get:
+      summary: Model Metadata Summary
+      description: Returns sanitized public metadata summary including features and holdout evaluation metrics.
+      operationId: getModelMetadata
+      security:
+        - ServiceTokenAuth: []
+      responses:
+        '200':
+          description: Allow-listed model metadata summary.
           content:
             application/json:
               schema:
                 type: object
-                properties:
-                  error:
-                    type: string
-                    example: Model artifact not ready
-
-  /api/v1/model/metadata:
-    get:
-      summary: Model Metadata
-      description: Returns version, training metrics, and feature schema of the currently loaded model.
-      operationId: getModelMetadata
-      responses:
-        '200':
-          description: Model metadata summary.
+        '401':
+          description: Missing service authentication token.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Invalid service authentication token.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
         '503':
           description: No model artifact currently loaded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'

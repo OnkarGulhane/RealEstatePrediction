@@ -1,28 +1,133 @@
-from pydantic import BaseModel, Field
-from typing import Optional
+import math
+from enum import Enum
+from typing import Optional, Dict, Any
+from pydantic import BaseModel, Field, model_validator
+
+
+class AreaBasisEnum(str, Enum):
+    CARPET = "CARPET"
+    SUPER = "SUPER"
+
 
 class PropertyPredictionRequest(BaseModel):
-    schema_version: str = Field(default="1.0", description="Contract schema version")
-    location: str = Field(..., description="Supported normalized property location")
-    area_value: float = Field(..., gt=0, description="Positive numeric property area")
-    area_basis: str = Field(default="CARPET", description="Area basis (CARPET or SUPER)")
-    bhk: Optional[int] = Field(default=None, ge=1, le=20, description="Number of bedrooms")
-    bathrooms: Optional[int] = Field(default=None, ge=1, le=20, description="Number of bathrooms")
-    balcony: Optional[int] = Field(default=None, ge=0, le=10, description="Number of balconies")
-    furnishing: Optional[str] = Field(default=None, description="Furnishing status")
+    schema_version: str = Field(
+        default="1.0",
+        description="Contract schema version. Currently accepted version is strictly '1.0'.",
+    )
+    location: str = Field(
+        ...,
+        min_length=1,
+        description="Supported Indian residential property location / city.",
+    )
+    area_value: float = Field(
+        ...,
+        gt=0,
+        description="Positive finite numerical property area in square feet.",
+    )
+    area_basis: AreaBasisEnum = Field(
+        default=AreaBasisEnum.CARPET,
+        description="Area measurement basis: 'CARPET' or 'SUPER'.",
+    )
+    bhk: Optional[int] = Field(
+        default=None,
+        ge=1,
+        le=20,
+        description="Number of bedrooms (BHK count, typically 1 to 20).",
+    )
+    bathrooms: Optional[float] = Field(
+        default=None,
+        ge=1.0,
+        le=20.0,
+        description="Number of bathrooms (positive count, typically 1 to 20).",
+    )
+    balcony: Optional[int] = Field(
+        default=None,
+        ge=0,
+        le=10,
+        description="Number of balconies (0 to 10).",
+    )
+    floor_number: Optional[float] = Field(
+        default=None,
+        ge=-2.0,
+        le=200.0,
+        description="Floor on which property is located (-1/basement, 0/ground, positive integer).",
+    )
+    total_floors: Optional[float] = Field(
+        default=None,
+        ge=1.0,
+        le=200.0,
+        description="Total floors in the building.",
+    )
+    parking_spaces: Optional[float] = Field(
+        default=None,
+        ge=0.0,
+        le=500.0,
+        description="Number of car parking spaces (0 or positive count). Evaluated under Treatment B.",
+    )
+    furnishing: Optional[str] = Field(
+        default=None,
+        description="Furnishing status (e.g. Furnished, Semi-Furnished, Unfurnished).",
+    )
+    transaction_type: Optional[str] = Field(
+        default=None,
+        description="Transaction type (e.g. Resale, New Property).",
+    )
+    status: Optional[str] = Field(
+        default=None,
+        description="Construction/possession status (e.g. Ready to Move, Almost Ready).",
+    )
+    facing: Optional[str] = Field(
+        default=None,
+        description="Facing orientation (e.g. East, North, North - East).",
+    )
+    ownership: Optional[str] = Field(
+        default=None,
+        description="Ownership type (e.g. Freehold, Co-operative Society, Leasehold).",
+    )
+
+    @model_validator(mode="after")
+    def validate_request_fields(self) -> "PropertyPredictionRequest":
+        # 1. Validate schema_version
+        if self.schema_version != "1.0":
+            raise ValueError(
+                f"Incompatible schema version '{self.schema_version}'. Only version '1.0' is supported."
+            )
+
+        # 2. Validate area_value is finite
+        if not math.isfinite(self.area_value):
+            raise ValueError("area_value must be a finite numerical value.")
+
+        # 3. Validate floor consistency if both are supplied
+        if self.floor_number is not None and self.total_floors is not None:
+            if not math.isfinite(self.floor_number) or not math.isfinite(self.total_floors):
+                raise ValueError("Floor values must be finite numerical values.")
+            if self.floor_number > self.total_floors:
+                raise ValueError(
+                    f"floor_number ({self.floor_number}) cannot exceed total_floors ({self.total_floors})."
+                )
+
+        return self
+
 
 class PredictionResponse(BaseModel):
-    estimated_price_inr: float
-    currency: str = "INR"
-    model_version: str
-    property_summary: dict
-    disclaimer: str
+    request_id: str = Field(..., description="Server-generated correlation request ID")
+    estimated_price_inr: float = Field(..., description="Estimated property listing price in INR")
+    currency: str = Field(default="INR", description="Currency code (INR)")
+    model_version: str = Field(..., description="Model identifier used for inference")
+    schema_version: str = Field(default="1.0", description="Contract schema version")
+    property_summary: Dict[str, Any] = Field(default_factory=dict, description="Summary of input features evaluated")
+    disclaimer: str = Field(
+        default="This estimate is generated by an offline-trained regression model based on historical listing data. It does not constitute a certified valuation or guaranteed market price.",
+        description="Legal and commercial disclaimer",
+    )
+
 
 class HealthLiveResponse(BaseModel):
     status: str = "alive"
     service: str = "inference-service"
 
+
 class HealthReadyResponse(BaseModel):
-    status: str
-    model_version: Optional[str] = None
-    reason: Optional[str] = None
+    status: str = Field(..., description="'ready' when model is loaded and ready, 'not_ready' otherwise")
+    model_version: Optional[str] = Field(default=None, description="Active model version if ready")
+    reason: Optional[str] = Field(default=None, description="Explanation when service is not ready")

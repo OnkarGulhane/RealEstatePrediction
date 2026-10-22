@@ -1,3 +1,3 @@
-from .settings import settings
+from .settings import settings, Settings, SERVICE_ROOT
 
-__all__ = ["settings"]
+__all__ = ["settings", "Settings", "SERVICE_ROOT"]
