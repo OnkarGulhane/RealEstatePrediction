@@ -14,10 +14,10 @@ Phase 2 offline machine learning training, feature engineering, validation-only 
 
 - **Primary Supervised Training View:** Generated deterministically at `ml/training/data/processed/phase2_supervised_deduplicated.csv` with exactly **65,255 unique property configurations** (removing 112,592 duplicate occurrences from 177,847 valid supervised target records; 100% exact mathematical reconciliation).
 - **Audit Mapping:** Preserved at `ml/training/data/processed/phase2_audit_mapping.csv` mapping every retained configuration to all original source indices and raw unverified units.
-- **Model Comparison & Hyperparameter Tuning:** 5 regression candidates evaluated across identical 70/15/15 deterministic partitions. Bounded validation-only hyperparameter grid search performed on the leading gradient boosted tree candidate without touching holdout test data.
+- **Model Comparison & Hyperparameter Tuning:** 5 regression candidates evaluated across identical 70/15/15 deterministic partitions. Bounded validation-only hyperparameter grid search performed on the leading gradient boosted tree candidate using training and validation partitions only (historical Treatment A exposure documented).
 - **Winning Candidate:** **`HistGradientBoostingRegressor` (Tuned, log-target transform)**, achieving:
   - **Validation MAE:** INR 26.70 Lakh (+57.00% improvement over Dummy baseline, R² = 0.6891; improved from default 27.28 Lakh).
-  - **Holdout Test MAE (Untouched 9,789 rows):** **INR 26.94 Lakh** (+56.91% improvement over Dummy baseline).
+  - **Holdout Test MAE (Fixed Holdout Partition, 9,789 rows):** **INR 26.94 Lakh** (+56.91% improvement over Dummy baseline).
   - **Holdout Test R²:** **0.7104**.
   - **Holdout Test RMSE:** **INR 85.18 Lakh**.
   - **Holdout Test Median Absolute Error:** **INR 11.06 Lakh**.
@@ -139,7 +139,7 @@ The fitted model pipeline consumes **22 total features** (16 numeric and 6 categ
    - **What Can and Cannot Be Inferred from the Data:**
      - *Can be inferred:* Having 21–50 private parking bays for a ₹64 Lakh 2 BHK residential apartment is physically implausible in Indian urban markets.
      - *Cannot be inferred:* The unstructured portal string cannot independently prove whether the seller intended a parking slot/bay number or entered an extreme count. Therefore, assuming that every value above 20 is an identifier is not treated as ground truth.
-   - **Validation-Only Sensitivity Comparison (Train 45,678 rows vs Validation 9,788 rows, seed=42; Holdout Untouched):**
+   - **Validation-Only Sensitivity Comparison (Train 45,678 rows vs Validation 9,788 rows, seed=42; Holdout Excluded from Comparison):**
      - Ambiguous rows in Training partition: 205 (0.45%); in Validation partition: 41 (0.42%).
      - **Treatment A (Current):** For $> 20$, set `parking_spaces = 1.0`, `has_parking = 1`, `parking_count_ambiguous = 1`.
        - Val MAE: **INR 26.70 Lakh** (₹2,669,974.40) | Val RMSE: **82.63 Lakh** | Val R²: **0.6934** | Val Med Error: **11.16 Lakh**
@@ -236,7 +236,7 @@ Hyperparameter tuning was conducted on the leading gradient-boosted tree candida
   6. **`{'max_iter': 150, 'max_leaf_nodes': 63, 'learning_rate': 0.1, 'min_samples_leaf': 15}` (WINNER):** Val MAE = **26.70 L**, R² = **0.6891**
 - **Outcome:** Validation MAE improved from 27.28 L to 26.70 L (+57.00% relative improvement over Dummy). Winning configuration was frozen and promoted for final evaluation.
 
-### Untouched Holdout Test Set Evaluation (9,789 rows)
+### Fixed Holdout Test Partition Evaluation (9,789 rows)
 
 The winning tuned model and Dummy baseline were evaluated on the final holdout test set:
 

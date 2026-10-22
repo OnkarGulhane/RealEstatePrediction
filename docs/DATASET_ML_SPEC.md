@@ -66,7 +66,7 @@ Raw Data (house_prices.csv, 187,531 rows)
    3. Seeded Train/Val/Test Split (seed=42; 70% / 15% / 15%)
       - Train: 45,678 rows
       - Validation: 9,788 rows
-      - Test: 9,789 rows (untouched until final evaluation)
+      - Test: 9,789 rows (fixed holdout partition; scored post-freeze for Treatment B)
           │
           ▼
    4. Model Comparison on Validation Set
@@ -77,7 +77,7 @@ Raw Data (house_prices.csv, 187,531 rows)
       - HistGradientBoostingRegressor (log-target)
           │
           ▼
-   5. Selection & Final Evaluation on Untouched Test Set (scripts/evaluate.py)
+   5. Selection & Final Evaluation on Fixed Holdout Test Partition (scripts/evaluate.py)
       - Selected: HistGradientBoostingRegressor (Tuned, log-target)
       - Test MAE: INR 26.94 Lakh (+56.91% improvement over baseline)
       - Test RMSE: INR 85.18 Lakh
@@ -157,7 +157,7 @@ The final fitted pipeline consumes **22 total features** (16 numeric and 6 categ
 | `hist_gradient_boosting_log` (Default) | ₹2,727,652.50 | 27.28 L | 84.90 L | 0.6763 | +56.06% | 2.34s |
 | **`hist_gradient_boosting_log_tuned`** | **₹2,670,468.29** | **26.70 L** | **83.20 L** | **0.6891** | **+57.00%** | **Validation Tuning** |
 
-### Final Untouched Test Set Evaluation (9,789 rows)
+### Final Fixed Holdout Test Partition Evaluation (9,789 rows)
 
 - **Dummy Baseline Test MAE:** INR 6,251,646.75 (62.52 Lakh), R² = -0.0581
 - **Winning Model (`hist_gradient_boosting_log_tuned`) Test MAE:** **INR 2,693,927.27 (26.94 Lakh)**

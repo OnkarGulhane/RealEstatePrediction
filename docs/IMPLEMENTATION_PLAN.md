@@ -185,7 +185,7 @@ Train and fairly compare models using the approved dataset rules, then produce a
 - [x] Implement reproducible preprocessing using fitted transformers within a scikit-learn `Pipeline`/`ColumnTransformer` (`PropertyFeatureExtractor`, `ColumnTransformer`).
 - [x] Establish a `DummyRegressor` baseline (median strategy: ₹62.52 Lakh Test MAE).
 - [x] Train and compare appropriate regression candidates, subject to data quality and runtime: Linear/Ridge Regression, Decision Tree Regressor, Random Forest Regressor, and HistGradientBoosting Regressor.
-- [x] Tune candidate models without using the final holdout test set for selection. Preserve a final, untouched test set (9,789 rows, 15%).
+- [x] Tune candidate models without using the holdout test set for selection. Preserve a fixed holdout partition (9,789 rows, 15%, seed=42) scored strictly post-freeze for Treatment B; record historical Treatment A exposure of this split as a documented limitation.
 - [x] Record MAE, RMSE, and R² on the test set; compare against the baseline and document segment/city-level results where sample sizes support responsible interpretation.
 - [x] Evaluate residuals and unrealistic errors. Review performance across supported locations and property segments rather than relying on a single overall metric.
 - [x] Assess the proposed target of at least 10% MAE improvement over the baseline (Achieved: +56.91% improvement; winning tuned model Test MAE ₹26.94 Lakh; see `docs/PHASE2_MODEL_EVALUATION_REPORT.md`).
@@ -205,7 +205,7 @@ Train and fairly compare models using the approved dataset rules, then produce a
 
 - Training and evaluation are reproducible with recorded configuration/seeds.
 - No known target leakage contaminates the final evaluation.
-- Baseline and candidates are compared on the same untouched test set.
+- Baseline and winning candidate are compared on the same fixed holdout test partition (historical Treatment A exposure documented).
 - Metrics and limitations are recorded; the model is not described as accurate beyond the evidence.
 - Artifact and metadata load successfully in a clean inference-compatible environment.
 - Product owner reviews and approves the candidate model or requests rework.
@@ -579,13 +579,13 @@ A phase report must not use phrases such as “fully working” or “all tests 
 4. **Runtime Versions:** Pinned and verified: Next.js 16.4.2 (Active LTS), React 19.0.0, Django 5.2.18 LTS, DRF 3.18.3, SimpleJWT 5.5.1, FastAPI 0.115.14, Python 3.13.
 
 ### 17.2 Current Open Decisions (Pending Evidence or Relevant Phases)
-1. Verify original dataset licence, provenance, attribution, and redistribution permissions before any dataset publication.
-2. Approve duplicate-record policy after investigating why repeated rows occur when `Index` is excluded.
-3. Finalize price parsing and treatment of `Call for Price` and suspicious values.
-4. Finalize Carpet Area/Super Area unit conversion and the normalized area-basis policy.
-5. Finalize supported location aliases and behavior for locations with limited/no training examples.
-6. Choose production hosting provider and public domain after local acceptance tests.
-7. Finalize data-retention and export policy before deployment.
+1. **Dataset Provenance & Redistribution:** Verify original dataset licence, provenance, attribution, and redistribution permissions before any dataset publication (designated UNVERIFIED / RESTRICTED FROM REDISTRIBUTION; all data local-only).
+2. **Duplicate-Record Policy:** **RESOLVED & EXECUTED (Phase 2):** Primary supervised view excludes exact 20-column duplicates (65,255 unique property configurations; 112,592 duplicate occurrences removed with auditable mapping; see `docs/DATASET_ML_SPEC.md` and `docs/OPEN_DECISIONS.md`).
+3. **Price Parsing & Target Integrity:** **RESOLVED & VERIFIED (Phase 1):** Continuous asking price parsed in INR (177,847 valid supervised rows; 9,684 Call for Price rows excluded; 0 unparseable rows; see `docs/DATASET_ML_SPEC.md`).
+4. **Area-Basis & Unit Policy:** **RESOLVED & EXECUTED (Phase 2):** Carpet Area and Super Area kept strictly separate with independent presence and verification indicators; unverified regional units excluded from numeric conversion (see `docs/DATASET_ML_SPEC.md`).
+5. **Supported Location Aliases & Policy:** Behavior for 81 dataset location strings handled via `OneHotEncoder(handle_unknown='ignore')` in Phase 2; application-level location aliasing and validation pending Phase 3/4.
+6. **Production Hosting Provider & Domain:** Choose production hosting provider and public domain after local acceptance tests (Phase 8).
+7. **Data Retention & Privacy Policy:** Finalize user account deletion, prediction history TTL, and export policies before deployment (Phase 4/8).
 
 A decision only blocks the phase that requires it, but must be resolved or explicitly accepted before that phase begins.
 
@@ -609,7 +609,8 @@ Online deployment has an additional release gate: production configuration, HTTP
 
 ## Approval Record
 
-- Implementation plan status: Proposed for review.
-- Project owner approval: Pending.
-- Current authorized phase: Phase 0 planning and decision finalization only.
-- Implementation authorization: Not granted by this document alone.
+- Phase 0: **APPROVED** (Architecture alignment and scaffolding verified).
+- Phase 1: **APPROVED** (Dataset audit, reconciliation accounting, and policy decisions finalized).
+- Phase 2: **IMPLEMENTATION COMPLETE / READY FOR OWNER REVIEW**; owner approval remains **PENDING**.
+- Phase 3: **NOT STARTED** and strictly not authorized until explicit Phase 2 owner approval.
+- Next release gate: Await product owner review and authorization before initiating Phase 3 (FastAPI inference service).
