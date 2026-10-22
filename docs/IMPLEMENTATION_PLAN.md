@@ -3,13 +3,13 @@
 | Field | Value |
 |---|---|
 | Document | Implementation Plan |
-| Version | 1.2 — Phase 2 in progress |
+| Version | 1.3 — Phase 2 implementation complete (ready for review) |
 | Product | Real Estate Price Prediction Platform — India |
 | Related documents | `docs/PRD.md`, `docs/SRS.md`, `docs/ARCHITECTURE.md`, `docs/DATASET_ML_SPEC.md`, `docs/TESTING_PLAN.md` |
 | Delivery strategy | Phase-gated; local-first; deploy online only after local acceptance |
-| Current status | Phase 2 in progress (Phase 0 and Phase 1 approved by product owner) |
+| Current status | Phase 2 implementation complete — ready for owner review (Phase 0 and Phase 1 approved by product owner) |
 | Last reviewed | 22 October 2026 |
-| Project owner approval | Phase 0 and Phase 1 Approved; Phase 2 authorized |
+| Project owner approval | Phase 0 and Phase 1 Approved; Phase 2 Pending |
 
 > This plan defines the execution sequence, deliverables, verification evidence, and approval gates. It does not mean that any phase has been implemented or passed. Do not start coding until Phase 0 decisions and scope are approved. Do not begin a later phase until the current phase is accepted by the project owner.
 
@@ -188,7 +188,7 @@ Train and fairly compare models using the approved dataset rules, then produce a
 - [x] Tune candidate models without using the final holdout test set for selection. Preserve a final, untouched test set (9,789 rows, 15%).
 - [x] Record MAE, RMSE, and R² on the test set; compare against the baseline and document segment/city-level results where sample sizes support responsible interpretation.
 - [x] Evaluate residuals and unrealistic errors. Review performance across supported locations and property segments rather than relying on a single overall metric.
-- [x] Assess the proposed target of at least 10% MAE improvement over the baseline (Achieved: +56.82% improvement; winning tuned model Test MAE ₹26.99 Lakh).
+- [x] Assess the proposed target of at least 10% MAE improvement over the baseline (Achieved: +56.91% improvement; winning tuned model Test MAE ₹26.94 Lakh; see `docs/PHASE2_MODEL_EVALUATION_REPORT.md`).
 - [x] Save the fitted preprocessing + estimator as one versioned artifact where feasible. Create metadata with target, feature schema, units, dataset version/hash/reference, split seed, dependency versions, metrics, training timestamp, and known limitations (`experiments/phase2/model_pipeline.joblib`, `metadata.json`).
 - [x] Create a model load/predict smoke test and verify predictions are finite, numeric, and consistent with the approved schema (`test_phase2_training.py`).
 - [x] Create a promotion step that validates candidate metadata/artifact before it is published to the inference service (`scripts/promote_model.py`).

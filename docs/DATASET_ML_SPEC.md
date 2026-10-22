@@ -78,9 +78,11 @@ Raw Data (house_prices.csv, 187,531 rows)
           │
           ▼
    5. Selection & Final Evaluation on Untouched Test Set (scripts/evaluate.py)
-      - Selected: HistGradientBoostingRegressor
-      - Test MAE: INR 27.43 Lakh (+56.12% improvement over baseline)
-      - Test R²: 0.7072
+      - Selected: HistGradientBoostingRegressor (Tuned, log-target)
+      - Test MAE: INR 26.94 Lakh (+56.91% improvement over baseline)
+      - Test RMSE: INR 85.18 Lakh
+      - Test R²: 0.7104
+      - Note: Scored post-freeze after validation-only tuning; earlier Treatment A iterations evaluated on this split historically.
           │
           ▼
    6. Promotion Validation Check (scripts/promote_model.py)
@@ -165,6 +167,7 @@ The final fitted pipeline consumes **22 total features** (16 numeric and 6 categ
 - **Relative MAE Improvement:** **+56.91%** (Target ≥10% **ACHIEVED**)
 - **Negative Predictions:** 0
 - **Non-finite Predictions:** 0
+- **Historical Holdout Note:** The fixed holdout partition (`random_state=42`) was scored strictly post-freeze after validation-only candidate selection and tuning; earlier Treatment A iterations were evaluated on this split historically (documented limitation; see `docs/PHASE2_MODEL_EVALUATION_REPORT.md`).
 
 ---
 
