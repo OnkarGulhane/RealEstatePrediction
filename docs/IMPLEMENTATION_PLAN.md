@@ -3,13 +3,13 @@
 | Field | Value |
 |---|---|
 | Document | Implementation Plan |
-| Version | 1.1 — Proposed for approval |
+| Version | 1.2 — Phase 2 in progress |
 | Product | Real Estate Price Prediction Platform — India |
 | Related documents | `docs/PRD.md`, `docs/SRS.md`, `docs/ARCHITECTURE.md`, `docs/DATASET_ML_SPEC.md`, `docs/TESTING_PLAN.md` |
 | Delivery strategy | Phase-gated; local-first; deploy online only after local acceptance |
-| Current status | Planning; implementation has not been authorized |
+| Current status | Phase 2 in progress (Phase 0 and Phase 1 approved by product owner) |
 | Last reviewed | 22 October 2026 |
-| Project owner approval | Pending |
+| Project owner approval | Phase 0 and Phase 1 Approved; Phase 2 authorized |
 
 > This plan defines the execution sequence, deliverables, verification evidence, and approval gates. It does not mean that any phase has been implemented or passed. Do not start coding until Phase 0 decisions and scope are approved. Do not begin a later phase until the current phase is accepted by the project owner.
 
@@ -50,8 +50,8 @@ All phases start as `NOT STARTED`. Status must be updated only from verified wor
 | Phase | Focus | Status | Approval required |
 |---|---|---|---|
 | 0 | Requirements, architecture, and open decisions | APPROVED | Yes |
-| 1 | Dataset audit and preparation rules | READY FOR REVIEW | Yes |
-| 2 | Offline ML training and evaluation | NOT STARTED | Yes |
+| 1 | Dataset audit and preparation rules | APPROVED | Yes |
+| 2 | Offline ML training and evaluation | READY FOR REVIEW | Yes |
 | 3 | Independent inference service | NOT STARTED | Yes |
 | 4 | Django application backend | NOT STARTED | Yes |
 | 5 | Next.js frontend | NOT STARTED | Yes |
@@ -181,17 +181,17 @@ Train and fairly compare models using the approved dataset rules, then produce a
 
 ### Tasks
 
-- [ ] Set up an isolated training environment and record dependency versions.
-- [ ] Implement reproducible preprocessing using fitted transformers within a scikit-learn `Pipeline`/`ColumnTransformer` where appropriate.
-- [ ] Establish a `DummyRegressor` baseline.
-- [ ] Train and compare appropriate regression candidates, subject to data quality and runtime: Linear/Ridge Regression, Decision Tree Regressor, Random Forest Regressor, and HistGradientBoosting Regressor.
-- [ ] Tune candidate models without using the final holdout test set for selection. Preserve a final, untouched test set.
-- [ ] Record MAE, RMSE, and R² on the test set; compare against the baseline and document segment/city-level results where sample sizes support responsible interpretation.
-- [ ] Evaluate residuals and unrealistic errors. Review performance across supported locations and property segments rather than relying on a single overall metric.
-- [ ] Assess the proposed target of at least 10% MAE improvement over the baseline. If unmet, document results and investigate; do not manipulate the split or metrics to force a pass.
-- [ ] Save the fitted preprocessing + estimator as one versioned artifact where feasible. Create metadata with target, feature schema, units, dataset version/hash/reference, split seed, dependency versions, metrics, training timestamp, and known limitations.
-- [ ] Create a model load/predict smoke test and verify predictions are finite, numeric, and consistent with the approved schema.
-- [ ] Create a promotion step that validates candidate metadata/artifact before it is published to the inference service. Do not assume a model artifact exists before this phase completes.
+- [x] Set up an isolated training environment and record dependency versions (scikit-learn 1.9.1, pandas 2.2.3, numpy 2.4.3, joblib 1.6.0).
+- [x] Implement reproducible preprocessing using fitted transformers within a scikit-learn `Pipeline`/`ColumnTransformer` (`PropertyFeatureExtractor`, `ColumnTransformer`).
+- [x] Establish a `DummyRegressor` baseline (median strategy: ₹62.52 Lakh Test MAE).
+- [x] Train and compare appropriate regression candidates, subject to data quality and runtime: Linear/Ridge Regression, Decision Tree Regressor, Random Forest Regressor, and HistGradientBoosting Regressor.
+- [x] Tune candidate models without using the final holdout test set for selection. Preserve a final, untouched test set (9,789 rows, 15%).
+- [x] Record MAE, RMSE, and R² on the test set; compare against the baseline and document segment/city-level results where sample sizes support responsible interpretation.
+- [x] Evaluate residuals and unrealistic errors. Review performance across supported locations and property segments rather than relying on a single overall metric.
+- [x] Assess the proposed target of at least 10% MAE improvement over the baseline (Achieved: +56.82% improvement; winning tuned model Test MAE ₹26.99 Lakh).
+- [x] Save the fitted preprocessing + estimator as one versioned artifact where feasible. Create metadata with target, feature schema, units, dataset version/hash/reference, split seed, dependency versions, metrics, training timestamp, and known limitations (`experiments/phase2/model_pipeline.joblib`, `metadata.json`).
+- [x] Create a model load/predict smoke test and verify predictions are finite, numeric, and consistent with the approved schema (`test_phase2_training.py`).
+- [x] Create a promotion step that validates candidate metadata/artifact before it is published to the inference service (`scripts/promote_model.py`).
 
 ### Deliverables
 

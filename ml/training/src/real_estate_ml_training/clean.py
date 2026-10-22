@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import re
 from typing import Any
+import numpy as np
 import pandas as pd
 
 
@@ -271,3 +272,169 @@ def prepare_property_data(
 
     accounting["output_rows"] = len(prepared_supervised)
     return prepared_supervised, accounting
+
+
+def build_phase2_deduplicated_view(
+    raw_df: pd.DataFrame,
+) -> tuple[pd.DataFrame, pd.DataFrame, dict[str, Any]]:
+    """
+    Constructs the Phase 2 deduplicated supervised training view and audit trail mapping.
+
+    Rules:
+    - Never modifies raw source data in place.
+    - Excludes 'Index' when identifying duplicate property records across all original 20 columns.
+    - Filters valid supervised targets ('Amount(in rupees)' parseable into numeric INR).
+    - Preserves row mapping from each retained configuration to all original source indices.
+    - Preserves strict separation between Carpet Area and Super Area.
+    - Preserves listings with regional/unverified area units without guessing conversions.
+
+    Returns:
+        tuple of (dedup_df, audit_mapping_df, accounting)
+    """
+    total_raw_rows = len(raw_df)
+    cols = raw_df.columns.tolist()
+
+    # Step 1: Parse target for all rows
+    target_results = [parse_target_price(v) for v in raw_df["Amount(in rupees)"]]
+    raw_df_work = raw_df.copy()
+    raw_df_work["target_status"] = [r["status"] for r in target_results]
+    raw_df_work["target_price_inr"] = [r["price_inr"] for r in target_results]
+    raw_df_work["target_unit"] = [r["unit"] for r in target_results]
+
+    # Target partition counts
+    valid_mask = raw_df_work["target_status"] == "VALID"
+    cfp_mask = raw_df_work["target_status"] == "CALL_FOR_PRICE"
+    blank_mask = raw_df_work["target_status"] == "BLANK"
+    unp_mask = raw_df_work["target_status"] == "UNPARSEABLE"
+
+    valid_target_rows = int(valid_mask.sum())
+    call_for_price_rows = int(cfp_mask.sum())
+    blank_target_rows = int(blank_mask.sum())
+    unparseable_target_rows = int(unp_mask.sum())
+
+    # Step 2: Define deduplication key across all original property columns excluding Index
+    dedup_cols = [
+        c for c in cols
+        if c not in ("Index", "target_status", "target_price_inr", "target_unit")
+    ]
+
+    # Full raw duplicate audit
+    raw_unique_configurations = int(len(raw_df_work.drop_duplicates(subset=dedup_cols)))
+    raw_duplicate_occurrences = total_raw_rows - raw_unique_configurations
+
+    cfp_df = raw_df_work[cfp_mask]
+    cfp_unique_configurations = int(len(cfp_df.drop_duplicates(subset=dedup_cols)))
+    cfp_duplicate_occurrences = call_for_price_rows - cfp_unique_configurations
+
+    # Filter to valid supervised subset
+    valid_df = raw_df_work[valid_mask].copy().reset_index(drop=True)
+
+    # Compute duplicate count and all source indices directly per configuration (avoids 20-col merge)
+    valid_df["duplicate_count"] = valid_df.groupby(dedup_cols, dropna=False)["Index"].transform("count")
+    valid_df["all_source_indices"] = valid_df.groupby(dedup_cols, dropna=False)["Index"].transform(
+        lambda s: ";".join(str(int(x)) for x in s)
+    )
+
+    first_occurrences = valid_df.drop_duplicates(subset=dedup_cols).copy().reset_index(drop=True)
+    first_occurrences["config_id"] = np.arange(1, len(first_occurrences) + 1)
+    first_occurrences["primary_source_index"] = first_occurrences["Index"]
+
+    merged = first_occurrences
+    valid_unique_configurations = len(merged)
+    valid_duplicate_occurrences = valid_target_rows - valid_unique_configurations
+
+    # Mathematical assertions
+    assert total_raw_rows == (
+        valid_target_rows + call_for_price_rows + blank_target_rows + unparseable_target_rows
+    ), "Target partition does not sum to total raw rows"
+    assert valid_target_rows == (
+        valid_unique_configurations + valid_duplicate_occurrences
+    ), "Valid target duplicate decomposition mismatch"
+    assert raw_unique_configurations == (
+        valid_unique_configurations + cfp_unique_configurations
+    ), "Unique configuration cross-sum mismatch"
+
+    # Step 3: Area parsing on the deduplicated configurations
+    carpet_parsed = [parse_area_field(v) for v in merged.get("Carpet Area", [None] * valid_unique_configurations)]
+    super_parsed = [parse_area_field(v) for v in merged.get("Super Area", [None] * valid_unique_configurations)]
+
+    carpet_sqft_conv = [convert_area_to_sqft(p[0], p[1]) for p in carpet_parsed]
+    super_sqft_conv = [convert_area_to_sqft(p[0], p[1]) for p in super_parsed]
+
+    merged["carpet_area_raw"] = merged.get("Carpet Area", [None] * valid_unique_configurations)
+    merged["carpet_area_val"] = [p[0] for p in carpet_parsed]
+    merged["carpet_area_unit"] = [p[1] for p in carpet_parsed]
+    merged["carpet_area_sqft"] = [c[0] for c in carpet_sqft_conv]
+    merged["carpet_area_unit_verified"] = [int(c[1]) for c in carpet_sqft_conv]
+
+    merged["super_area_raw"] = merged.get("Super Area", [None] * valid_unique_configurations)
+    merged["super_area_val"] = [p[0] for p in super_parsed]
+    merged["super_area_unit"] = [p[1] for p in super_parsed]
+    merged["super_area_sqft"] = [c[0] for c in super_sqft_conv]
+    merged["super_area_unit_verified"] = [int(c[1]) for c in super_sqft_conv]
+
+    merged["has_carpet_area"] = merged["carpet_area_val"].notnull().astype(int)
+    merged["has_super_area"] = merged["super_area_val"].notnull().astype(int)
+
+    has_carpet = merged["has_carpet_area"] == 1
+    has_super = merged["has_super_area"] == 1
+    carpet_only_count = int((has_carpet & ~has_super).sum())
+    super_only_count = int((~has_carpet & has_super).sum())
+    both_areas_count = int((has_carpet & has_super).sum())
+    neither_area_count = int((~has_carpet & ~has_super).sum())
+
+    # Build clean output columns for deduplicated view
+    output_cols = [
+        "config_id",
+        "primary_source_index",
+        "duplicate_count",
+        "target_price_inr",
+        "target_unit",
+        "carpet_area_raw",
+        "carpet_area_val",
+        "carpet_area_unit",
+        "carpet_area_sqft",
+        "carpet_area_unit_verified",
+        "super_area_raw",
+        "super_area_val",
+        "super_area_unit",
+        "super_area_sqft",
+        "super_area_unit_verified",
+        "has_carpet_area",
+        "has_super_area",
+    ]
+    # Feature candidate columns from raw
+    for col in [
+        "Title", "location", "Status", "Floor", "Transaction",
+        "Furnishing", "facing", "overlooking", "Society",
+        "Bathroom", "Balcony", "Car Parking", "Ownership",
+    ]:
+        if col in merged.columns and col not in output_cols:
+            output_cols.append(col)
+
+    dedup_df = merged[output_cols].copy()
+
+    # Step 4: Audit mapping table
+    audit_mapping_df = merged[
+        ["config_id", "primary_source_index", "duplicate_count", "all_source_indices"]
+    ].copy()
+
+    accounting = {
+        "total_raw_rows": total_raw_rows,
+        "valid_target_rows": valid_target_rows,
+        "call_for_price_rows": call_for_price_rows,
+        "blank_target_rows": blank_target_rows,
+        "unparseable_target_rows": unparseable_target_rows,
+        "raw_unique_configurations": raw_unique_configurations,
+        "raw_duplicate_occurrences": raw_duplicate_occurrences,
+        "valid_unique_configurations": valid_unique_configurations,
+        "valid_duplicate_occurrences": valid_duplicate_occurrences,
+        "cfp_unique_configurations": cfp_unique_configurations,
+        "cfp_duplicate_occurrences": cfp_duplicate_occurrences,
+        "carpet_only_count": carpet_only_count,
+        "super_only_count": super_only_count,
+        "both_areas_count": both_areas_count,
+        "neither_area_count": neither_area_count,
+    }
+
+    return dedup_df, audit_mapping_df, accounting
