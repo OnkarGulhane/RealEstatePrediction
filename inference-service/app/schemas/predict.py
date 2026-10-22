@@ -11,7 +11,7 @@ class AreaBasisEnum(str, Enum):
 
 class PropertyPredictionRequest(BaseModel):
     schema_version: str = Field(
-        default="1.0",
+        ...,
         description="Contract schema version. Currently accepted version is strictly '1.0'.",
     )
     location: str = Field(
@@ -25,7 +25,7 @@ class PropertyPredictionRequest(BaseModel):
         description="Positive finite numerical property area in square feet.",
     )
     area_basis: AreaBasisEnum = Field(
-        default=AreaBasisEnum.CARPET,
+        ...,
         description="Area measurement basis: 'CARPET' or 'SUPER'.",
     )
     bhk: Optional[int] = Field(
@@ -58,11 +58,11 @@ class PropertyPredictionRequest(BaseModel):
         le=200.0,
         description="Total floors in the building.",
     )
-    parking_spaces: Optional[float] = Field(
+    parking_spaces: Optional[int] = Field(
         default=None,
-        ge=0.0,
-        le=500.0,
-        description="Number of car parking spaces (0 or positive count). Evaluated under Treatment B.",
+        ge=0,
+        le=500,
+        description="Number of car parking spaces (0 or positive whole-number count). Evaluated under Treatment B.",
     )
     furnishing: Optional[str] = Field(
         default=None,

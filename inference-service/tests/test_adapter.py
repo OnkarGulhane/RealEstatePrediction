@@ -63,6 +63,7 @@ def test_adapter_parking_treatment_b_semantics(dummy_categories, dummy_raw_map):
         schema_version="1.0",
         location="Thane",
         area_value=1000.0,
+        area_basis=AreaBasisEnum.CARPET,
         parking_spaces=None,
     )
     df_none = RequestAdapter.request_to_dataframe(req_none, dummy_categories, dummy_raw_map)
@@ -73,7 +74,8 @@ def test_adapter_parking_treatment_b_semantics(dummy_categories, dummy_raw_map):
         schema_version="1.0",
         location="Thane",
         area_value=1000.0,
-        parking_spaces=0.0,
+        area_basis=AreaBasisEnum.CARPET,
+        parking_spaces=0,
     )
     df_zero = RequestAdapter.request_to_dataframe(req_zero, dummy_categories, dummy_raw_map)
     assert df_zero.loc[0, "Car Parking"] == "None"
@@ -83,7 +85,8 @@ def test_adapter_parking_treatment_b_semantics(dummy_categories, dummy_raw_map):
         schema_version="1.0",
         location="Thane",
         area_value=1000.0,
-        parking_spaces=2.0,
+        area_basis=AreaBasisEnum.CARPET,
+        parking_spaces=2,
     )
     df_two = RequestAdapter.request_to_dataframe(req_two, dummy_categories, dummy_raw_map)
     assert df_two.loc[0, "Car Parking"] == "2 Covered"
@@ -93,7 +96,8 @@ def test_adapter_parking_treatment_b_semantics(dummy_categories, dummy_raw_map):
         schema_version="1.0",
         location="Thane",
         area_value=1000.0,
-        parking_spaces=42.0,
+        area_basis=AreaBasisEnum.CARPET,
+        parking_spaces=42,
     )
     df_amb = RequestAdapter.request_to_dataframe(req_amb, dummy_categories, dummy_raw_map)
     assert df_amb.loc[0, "Car Parking"] == "42 Covered"
@@ -104,6 +108,7 @@ def test_adapter_floor_mapping(dummy_categories, dummy_raw_map):
         schema_version="1.0",
         location="Thane",
         area_value=1000.0,
+        area_basis=AreaBasisEnum.CARPET,
         floor_number=0.0,
         total_floors=4.0,
     )
@@ -117,6 +122,7 @@ def test_adapter_categorical_normalization(dummy_categories, dummy_raw_map):
         schema_version="1.0",
         location="Thane",
         area_value=1000.0,
+        area_basis=AreaBasisEnum.CARPET,
         furnishing="SEMI_FURNISHED",
         transaction_type="new-property",
         facing="North - East",
@@ -134,6 +140,7 @@ def test_adapter_unsupported_location_raises(dummy_categories, dummy_raw_map):
         schema_version="1.0",
         location="Atlantis",
         area_value=1000.0,
+        area_basis=AreaBasisEnum.CARPET,
     )
     with pytest.raises(ValueError, match="UNSUPPORTED_LOCATION"):
         RequestAdapter.request_to_dataframe(req, dummy_categories, dummy_raw_map)
@@ -144,6 +151,7 @@ def test_adapter_invalid_category_raises(dummy_categories, dummy_raw_map):
         schema_version="1.0",
         location="Thane",
         area_value=1000.0,
+        area_basis=AreaBasisEnum.CARPET,
         furnishing="Ultra Luxurious Golden Furnished",
     )
     with pytest.raises(ValueError, match="INVALID_CATEGORY"):
@@ -155,6 +163,7 @@ def test_adapter_bathroom_interval_gt_10(dummy_categories, dummy_raw_map):
         schema_version="1.0",
         location="Thane",
         area_value=1000.0,
+        area_basis=AreaBasisEnum.CARPET,
         bathrooms=12.0,
         balcony=2,
     )
@@ -174,7 +183,7 @@ def test_adapter_extracts_exact_22_features_in_order(dummy_categories, dummy_raw
         bhk=2,
         bathrooms=2.0,
         balcony=1,
-        parking_spaces=2.0,
+        parking_spaces=2,
         floor_number=2.0,
         total_floors=5.0,
         furnishing="Semi-Furnished",

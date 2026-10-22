@@ -49,7 +49,7 @@ def test_real_artifact_smoke():
         "bhk": 2,
         "bathrooms": 2.0,
         "balcony": 1,
-        "parking_spaces": 1.0,
+        "parking_spaces": 1,
         "furnishing": "Semi-Furnished",
         "transaction_type": "Resale",
         "status": "Ready to Move",

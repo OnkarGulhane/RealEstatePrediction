@@ -37,20 +37,36 @@ def test_contract_drift_paths_and_operations():
 
 
 def test_contract_drift_request_schema():
-    """Verify PropertyPredictionRequest fields exactly match contract schema properties."""
+    """Verify PropertyPredictionRequest fields and required set exactly match contract schema properties."""
     with open(CONTRACT_PATH, "r", encoding="utf-8") as f:
         spec = yaml.safe_load(f)
 
     schemas = spec.get("components", {}).get("schemas", {})
     assert "PropertyPredictionRequest" in schemas
-    contract_props = set(schemas["PropertyPredictionRequest"].get("properties", {}).keys())
-    model_props = set(PropertyPredictionRequest.model_fields.keys())
+    req_schema = schemas["PropertyPredictionRequest"]
 
+    # 1. Compare all property names
+    contract_props = set(req_schema.get("properties", {}).keys())
+    model_props = set(PropertyPredictionRequest.model_fields.keys())
     assert contract_props == model_props, (
         f"Contract schema differs from Pydantic model. "
         f"In contract only: {contract_props - model_props}. "
         f"In model only: {model_props - contract_props}."
     )
+
+    # 2. Compare required fields set
+    contract_required = set(req_schema.get("required", []))
+    model_required = {
+        name for name, field in PropertyPredictionRequest.model_fields.items() if field.is_required()
+    }
+    assert contract_required == model_required, (
+        f"Required fields mismatch between OpenAPI contract and Pydantic model. "
+        f"In contract required only: {contract_required - model_required}. "
+        f"In model required only: {model_required - contract_required}."
+    )
+
+    # 3. Verify parking_spaces is typed as integer in both contract and schema
+    assert req_schema["properties"]["parking_spaces"]["type"] == "integer"
 
 
 def test_contract_drift_security_scheme():

@@ -80,7 +80,7 @@ def test_predict_successful_call_single_predict_invocation(mock_model_env):
         "bhk": 2,
         "bathrooms": 2.0,
         "balcony": 1,
-        "parking_spaces": 1.0,
+        "parking_spaces": 1,
         "furnishing": "Semi-Furnished",
         "transaction_type": "Resale",
         "status": "Ready to Move",
@@ -112,6 +112,50 @@ def test_predict_rejects_incompatible_schema_version(mock_model_env):
     data = response.json()
     assert data["error"]["code"] == "INCOMPATIBLE_SCHEMA_VERSION"
     assert "request_id" in data["error"]
+
+
+def test_predict_rejects_missing_required_schema_version(mock_model_env):
+    """Rejects requests omitting required schema_version with HTTP 422."""
+    payload = {
+        "location": "Thane",
+        "area_value": 1200.0,
+        "area_basis": "CARPET",
+    }
+    response = client.post("/api/v1/predict", json=payload)
+    assert response.status_code == 422
+    data = response.json()
+    assert data["error"]["code"] == "VALIDATION_ERROR"
+    assert "schema_version" in str(data["error"]["fields"])
+
+
+def test_predict_rejects_missing_required_area_basis(mock_model_env):
+    """Rejects requests omitting required area_basis with HTTP 422."""
+    payload = {
+        "schema_version": "1.0",
+        "location": "Thane",
+        "area_value": 1200.0,
+    }
+    response = client.post("/api/v1/predict", json=payload)
+    assert response.status_code == 422
+    data = response.json()
+    assert data["error"]["code"] == "VALIDATION_ERROR"
+    assert "area_basis" in str(data["error"]["fields"])
+
+
+def test_predict_rejects_fractional_parking_spaces(mock_model_env):
+    """Rejects fractional parking counts like 1.5 with HTTP 422 instead of silent truncation."""
+    payload = {
+        "schema_version": "1.0",
+        "location": "Thane",
+        "area_value": 1200.0,
+        "area_basis": "CARPET",
+        "parking_spaces": 1.5,
+    }
+    response = client.post("/api/v1/predict", json=payload)
+    assert response.status_code == 422
+    data = response.json()
+    assert data["error"]["code"] == "VALIDATION_ERROR"
+    assert "parking_spaces" in str(data["error"]["fields"])
 
 
 def test_predict_rejects_invalid_area_values(mock_model_env):

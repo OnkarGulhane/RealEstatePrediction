@@ -90,13 +90,12 @@ components:
           example: 5.0
           description: Total number of floors in the building.
         parking_spaces:
-          type: number
-          format: float
-          minimum: 0.0
-          maximum: 500.0
+          type: integer
+          minimum: 0
+          maximum: 500
           nullable: true
-          example: 1.0
-          description: Dedicated parking spaces. Evaluated under Phase 2 Treatment B semantics.
+          example: 1
+          description: Dedicated parking spaces (non-negative whole-number count). Evaluated under Phase 2 Treatment B semantics.
         furnishing:
           type: string
           nullable: true
