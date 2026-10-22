@@ -220,7 +220,7 @@ Before applying data splitting, proxy grouping keys were evaluated across the 65
 The `ridge_log` candidate exhibited a reasonable MAE (₹39.92 Lakh) but an extraordinarily large RMSE (₹359.14 Lakh) and a negative R² (-4.7922). Investigation revealed that linear regression fitted in $\log(1+y)$ space produces unbounded linear combinations when exposed to rare one-hot encoded location categories combined with large numerical area values. When exponentiated back via $\exp(\hat{y}) - 1$, these produce astronomical predictions (e.g. up to ₹311 Crore on properties actually priced at ₹3.5 Crore). Squaring these rare multi-hundred-crore errors produces residual sum-of-squares in excess of $10^{19}$, causing negative R² and massive RMSE. Tree-based regressors naturally bound leaf predictions within observed training price ranges, avoiding this failure mode entirely.
 
 ### Bounded Validation-Only Hyperparameter Tuning
-Hyperparameter tuning was conducted on the leading gradient-boosted tree candidate using strictly the Training partition (45,678 rows) for fitting and the Validation partition (9,788 rows) for selection. The Holdout Test partition was never accessed.
+Hyperparameter tuning was conducted on the leading gradient-boosted tree candidate using strictly the Training partition (45,678 rows) for fitting and the Validation partition (9,788 rows) for selection. For Treatment B, the holdout test partition was not used for candidate selection or hyperparameter tuning. Earlier Treatment A iterations had evaluated this same fixed split historically; that exposure remains a documented limitation (see Section 11, Remaining Risks & Boundaries).
 
 - **Search Space:**
   - `max_iter`: [100, 150, 200]
