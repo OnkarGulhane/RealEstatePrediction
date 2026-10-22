@@ -2,8 +2,8 @@
 
 A modern, full-stack, machine-learning-powered web platform for estimating residential property listing prices in Indian Rupees (INR).
 
-> **Current Repository Status: SCAFFOLD STATE — PHASE 0 PLANNING**  
-> This repository contains the minimally verified architectural scaffold. Product features, live ML model training, user authentication, property prediction forms, prediction history, and administrator dashboards are planned for execution across gated development phases following formal product-owner approval.
+> **Current Repository Status: PHASE 4 APPROVED — DJANGO REST FRAMEWORK APPLICATION BACKEND**
+> Phases 0 (Architecture), 1 (Data Audit), 2 (Offline ML Training & Evaluation), 3 (FastAPI Inference Service), and 4 (Django REST Framework Backend) are completed, verified, and approved by the Product Owner. Phase 5 (Next.js Frontend) is NOT STARTED.
 
 ---
 
@@ -135,10 +135,8 @@ cd inference-service
 
 ---
 
-## 7. What Is Not Implemented in the Scaffold (Non-Goals)
+## 7. Upcoming Phases & Next Steps
 
-- Full user registration/login and role-based permissions (Scheduled for Phase 4).
-- Production property price regression model training (Scheduled for Phase 2).
-- Raw dataset cleaning and duplicate row resolution (Scheduled for Phase 1).
-- Database domain models, user prediction history records, and admin reports (Scheduled for Phase 4).
-- Frontend interactive form components, charts, and CSV exports (Scheduled for Phase 5).
+- **Phase 5 (Next.js Frontend):** Responsive web UI, property input form, result display with disclaimer, authenticated prediction history dashboard, admin analytics charts.
+ - **Phase 6 (Integration QA):** Cross-service end-to-end testing, error handling under latency/network failures, contract test enforcement.
+ - **Phase 7 & 8 (Local Release & Deployment):** Multi-service containerization, deployment runbooks.

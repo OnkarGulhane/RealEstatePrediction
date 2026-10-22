@@ -1,27 +1,36 @@
 openapi: 3.0.3
 info:
   title: Real Estate Price Prediction Platform — Application API
-  version: 1.0.0-scaffold
+  version: 1.0.0
   description: >
-    Public application API exposed by Django REST Framework to the Next.js frontend.
-    This document defines the minimal scaffold routes and marks product-level endpoints as planned.
+    Application API exposed by Django REST Framework to the Next.js frontend and external clients.
+    Provides authentication, property price prediction orchestration, user prediction history,
+    canonical locations metadata, and administrator dashboard analytics.
 servers:
   - url: http://localhost:8000/api/v1
     description: Local development backend
+
+security:
+  - BearerAuth: []
 
 paths:
   /health/:
     get:
       summary: Service Health Check
-      description: Returns service liveness and scaffold status. Does not indicate ML model readiness.
+      description: Returns backend service liveness and version info.
       operationId: getServiceHealth
+      security: []
       responses:
         '200':
-          description: Service is reachable and running.
+          description: Backend service is operational.
           content:
             application/json:
               schema:
                 type: object
+                required:
+                  - status
+                  - service
+                  - version
                 properties:
                   status:
                     type: string
@@ -31,45 +40,983 @@ paths:
                     example: real-estate-backend
                   version:
                     type: string
-                    example: 1.0.0-scaffold
+                    example: 1.0.0
 
-  # -------------------------------------------------------------
-  # Planned Endpoints (Pending Implementation in Phases 4 & 5)
-  # -------------------------------------------------------------
+  /auth/csrf/:
+    get:
+      summary: CSRF Token Bootstrap
+      description: Returns a masked CSRF token and sets the csrftoken cookie. Enables frontend clients on allowed origins to obtain CSRF credentials for state-changing cookie operations.
+      operationId: getCsrfToken
+      security: []
+      responses:
+        '200':
+          description: CSRF token issued successfully.
+          headers:
+            Set-Cookie:
+              schema:
+                type: string
+                example: csrftoken=...; Path=/; SameSite=Lax
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - csrf_token
+                properties:
+                  csrf_token:
+                    type: string
+                    description: Masked CSRF token for use in X-CSRFToken request header.
+
   /auth/register/:
     post:
-      summary: "[PLANNED - Phase 4] User Registration"
-      description: Register a new normal user account.
+      summary: User Registration
+      description: Registers a new normal user account. Passwords must be at least 8 characters. Returns an access JWT and sets an HttpOnly refresh cookie.
+      operationId: registerUser
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
       responses:
-        '501':
-          description: Planned feature not yet implemented in scaffold.
+        '201':
+          description: User registered successfully.
+          headers:
+            Set-Cookie:
+              schema:
+                type: string
+                example: refresh_token=...; HttpOnly; Path=/api/v1/auth/; SameSite=Lax
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthSuccessResponse'
+        '400':
+          description: Validation error (e.g. duplicate email, short password).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
 
   /auth/login/:
     post:
-      summary: "[PLANNED - Phase 4] User Authentication"
-      description: Authenticate user credentials and establish session/token.
+      summary: User Login
+      description: Authenticates user credentials. Returns an access JWT and sets a rotated HttpOnly refresh cookie.
+      operationId: loginUser
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
       responses:
-        '501':
-          description: Planned feature not yet implemented in scaffold.
+        '200':
+          description: Authentication successful.
+          headers:
+            Set-Cookie:
+              schema:
+                type: string
+                example: refresh_token=...; HttpOnly; Path=/api/v1/auth/; SameSite=Lax
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthSuccessResponse'
+        '401':
+          description: Invalid email or password.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /auth/refresh/:
+    post:
+      summary: Refresh Access Token
+      description: Issues a new short-lived access JWT. Accepts refresh token either from HttpOnly cookie or JSON body. Rotates the refresh token.
+      operationId: refreshToken
+      security:
+        - CookieAuth: []
+        - BearerAuth: []
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                refresh:
+                  type: string
+                  description: Optional refresh token if not provided via cookie.
+      responses:
+        '200':
+          description: New access token issued.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenRefreshResponse'
+        '401':
+          description: Refresh token is missing, expired, or blacklisted.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden - CSRF validation failed or token missing on cookie-backed request.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /auth/logout/:
+    post:
+      summary: User Logout
+      description: Blacklists the active refresh token and clears the HttpOnly refresh cookie. Enforces CSRF validation for cookie-backed requests.
+      operationId: logoutUser
+      security:
+        - CookieAuth: []
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Successfully logged out.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Successfully logged out.
+        '403':
+          description: Forbidden - CSRF validation failed or token missing on cookie-backed request.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /auth/me/:
+    get:
+      summary: Current User Profile
+      description: Retrieves the profile of the currently authenticated user.
+      operationId: getCurrentUserProfile
+      responses:
+        '200':
+          description: Current user profile.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfile'
+        '401':
+          description: Unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    patch:
+      summary: Update User Profile
+      description: Updates editable fields of current user profile (e.g. display_name).
+      operationId: updateCurrentUserProfile
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserProfileUpdateRequest'
+      responses:
+        '200':
+          description: Profile updated.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfile'
+        '400':
+          description: Validation error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /locations/:
+    get:
+      summary: Canonical Locations & Metadata
+      description: Public metadata endpoint returning canonical 81 Indian cities and categorical feature levels.
+      operationId: getLocationsMetadata
+      security: []
+      responses:
+        '200':
+          description: Canonical locations and categorical metadata.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LocationsMetadataResponse'
 
   /predictions/:
     post:
-      summary: "[PLANNED - Phase 4] Submit Property Prediction Request"
-      description: Validates property details, requests prediction from inference service, and stores successful records.
+      summary: Submit Property Prediction Request
+      description: Validates property attributes against Phase 3 contract, calls inference service, and stores successful positive finite INR predictions.
+      operationId: createPrediction
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PropertyPredictionInput'
       responses:
-        '501':
-          description: Planned feature not yet implemented in scaffold.
+        '201':
+          description: Prediction generated and persisted.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PredictionRecord'
+        '400':
+          description: Request body validation failed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '503':
+          description: Inference service unavailable or model unready.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '504':
+          description: Inference service timed out.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
     get:
-      summary: "[PLANNED - Phase 4] User Prediction History"
+      summary: User Prediction History
       description: Paginated prediction history belonging exclusively to the authenticated user.
+      operationId: listUserPredictions
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: page_size
+          in: query
+          schema:
+            type: integer
+            default: 20
       responses:
-        '501':
-          description: Planned feature not yet implemented in scaffold.
+        '200':
+          description: Paginated prediction records.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedPredictionList'
+        '401':
+          description: Unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /predictions/{id}/:
+    get:
+      summary: Retrieve Specific Prediction
+      description: Returns a single prediction record by ID. Strict ownership isolation applies (returns 404 if not owned by user).
+      operationId: getPredictionById
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Prediction record.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PredictionRecord'
+        '401':
+          description: Unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Prediction not found or not owned by user.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
 
   /admin/summary/:
     get:
-      summary: "[PLANNED - Phase 4] Admin Dashboard Summary"
-      description: Administrator summary statistics computed from real database records.
+      summary: Admin Dashboard Summary
+      description: Administrator summary statistics computed from live database records. Requires staff status.
+      operationId: getAdminSummary
       responses:
-        '501':
-          description: Planned feature not yet implemented in scaffold.
+        '200':
+          description: Summary statistics.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminSummaryResponse'
+        '401':
+          description: Unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden - requires staff/superuser privileges.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /admin/users/:
+    get:
+      summary: Admin User Management List
+      description: Paginated list of registered users with search. Requires staff status.
+      operationId: listAdminUsers
+      parameters:
+        - name: search
+          in: query
+          schema:
+            type: string
+          description: Search email or display name.
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+      responses:
+        '200':
+          description: Paginated users.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminUserListResponse'
+        '403':
+          description: Forbidden.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /admin/predictions/:
+    get:
+      summary: Admin Prediction Audit List
+      description: Paginated list of all prediction records across all users with filters. Requires staff status.
+      operationId: listAdminPredictions
+      parameters:
+        - name: location
+          in: query
+          schema:
+            type: string
+        - name: area_basis
+          in: query
+          schema:
+            type: string
+            enum: [CARPET, SUPER]
+        - name: user_id
+          in: query
+          schema:
+            type: string
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+      responses:
+        '200':
+          description: Paginated prediction records across platform.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminPredictionListResponse'
+        '403':
+          description: Forbidden.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /admin/reports/:
+    get:
+      summary: Admin Analytics Reports
+      description: Aggregated prediction analytics, volume, and daily trends over a date range. Requires staff status.
+      operationId: getAdminReports
+      parameters:
+        - name: start_date
+          in: query
+          schema:
+            type: string
+            format: date
+            example: '2026-09-01'
+        - name: end_date
+          in: query
+          schema:
+            type: string
+            format: date
+            example: '2026-10-01'
+      responses:
+        '200':
+          description: Reporting analytics.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminReportsResponse'
+        '400':
+          description: Invalid date range or format.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /admin/model/:
+    get:
+      summary: Admin Model Metadata & Metrics
+      description: Offline evaluation metrics and configuration of the active ML model. Requires staff status.
+      operationId: getAdminModelMetadata
+      responses:
+        '200':
+          description: Model evaluation metrics and details.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminModelMetadataResponse'
+        '403':
+          description: Forbidden.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+    CookieAuth:
+      type: apiKey
+      in: cookie
+      name: refresh_token
+
+  schemas:
+    ErrorResponse:
+      type: object
+      required:
+        - error
+      properties:
+        error:
+          type: object
+          required:
+            - code
+            - message
+          properties:
+            code:
+              type: string
+              example: VALIDATION_ERROR
+            message:
+              type: string
+              example: The request payload contained invalid fields.
+            fields:
+              type: object
+              additionalProperties:
+                type: array
+                items:
+                  type: string
+            request_id:
+              type: string
+              example: a4b1f893-019e-4c75-8120-746a50b73b52
+
+    UserProfile:
+      type: object
+      required:
+        - id
+        - email
+        - display_name
+        - is_staff
+        - is_active
+        - created_at
+      properties:
+        id:
+          type: string
+          format: uuid
+        email:
+          type: string
+          format: email
+        display_name:
+          type: string
+        is_staff:
+          type: boolean
+        is_active:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+
+    RegisterRequest:
+      type: object
+      required:
+        - email
+        - password
+      properties:
+        email:
+          type: string
+          format: email
+          example: buyer@example.com
+        password:
+          type: string
+          format: password
+          minLength: 8
+          example: SecurePass123!
+        display_name:
+          type: string
+          example: Ramesh Sharma
+
+    LoginRequest:
+      type: object
+      required:
+        - email
+        - password
+      properties:
+        email:
+          type: string
+          format: email
+          example: buyer@example.com
+        password:
+          type: string
+          format: password
+          example: SecurePass123!
+
+    AuthSuccessResponse:
+      type: object
+      required:
+        - user
+        - access
+        - token_type
+        - expires_in
+      properties:
+        user:
+          $ref: '#/components/schemas/UserProfile'
+        access:
+          type: string
+          description: Short-lived access JWT.
+        token_type:
+          type: string
+          example: Bearer
+        expires_in:
+          type: integer
+          example: 900
+
+    TokenRefreshResponse:
+      type: object
+      required:
+        - access
+        - token_type
+        - expires_in
+      properties:
+        access:
+          type: string
+        token_type:
+          type: string
+          example: Bearer
+        expires_in:
+          type: integer
+          example: 900
+
+    UserProfileUpdateRequest:
+      type: object
+      properties:
+        display_name:
+          type: string
+          example: Ramesh S.
+
+    PropertyPredictionInput:
+      type: object
+      required:
+        - schema_version
+        - location
+        - area_value
+        - area_basis
+      properties:
+        schema_version:
+          type: string
+          enum: ["1.0"]
+          example: "1.0"
+        location:
+          type: string
+          example: Mumbai
+        area_value:
+          type: number
+          format: float
+          minimum: 100.0
+          maximum: 20000.0
+          example: 1200.0
+        area_basis:
+          type: string
+          enum: [CARPET, SUPER]
+          example: CARPET
+        bhk:
+          type: integer
+          minimum: 1
+          maximum: 10
+          example: 3
+        bathrooms:
+          type: number
+          format: float
+          minimum: 1.0
+          maximum: 10.0
+          example: 3.0
+        balcony:
+          type: integer
+          minimum: 0
+          maximum: 10
+          example: 1
+        floor_number:
+          type: number
+          format: float
+          example: 4.0
+        total_floors:
+          type: number
+          format: float
+          example: 15.0
+        parking_spaces:
+          type: integer
+          minimum: 0
+          maximum: 20
+          example: 1
+        furnishing:
+          type: string
+          enum: [Furnished, Semi-Furnished, Unfurnished]
+          example: Semi-Furnished
+        transaction_type:
+          type: string
+          enum: [New Property, Resale, Rent/Lease, Other]
+          example: Resale
+        status:
+          type: string
+          enum: [Ready to Move]
+          example: Ready to Move
+        facing:
+          type: string
+          enum: [East, North, North - East, North - West, South, South - East, South -West, West]
+          example: East
+        ownership:
+          type: string
+          enum: [Freehold, Co-operative Society, Leasehold, Power Of Attorney]
+          example: Freehold
+
+    PredictionRecord:
+      type: object
+      required:
+        - id
+        - user_id
+        - location
+        - area_value
+        - area_basis
+        - estimated_price_inr
+        - currency
+        - model_version
+        - schema_version
+        - created_at
+      properties:
+        id:
+          type: string
+          format: uuid
+        user_id:
+          type: string
+          format: uuid
+        location:
+          type: string
+        area_value:
+          type: number
+        area_basis:
+          type: string
+        bhk:
+          type: integer
+          nullable: true
+        bathrooms:
+          type: number
+          nullable: true
+        balcony:
+          type: integer
+          nullable: true
+        floor_number:
+          type: number
+          nullable: true
+        total_floors:
+          type: number
+          nullable: true
+        parking_spaces:
+          type: integer
+          nullable: true
+        furnishing:
+          type: string
+          nullable: true
+        transaction_type:
+          type: string
+          nullable: true
+        status:
+          type: string
+          nullable: true
+        facing:
+          type: string
+          nullable: true
+        ownership:
+          type: string
+          nullable: true
+        estimated_price_inr:
+          type: string
+          example: "12500000.00"
+        currency:
+          type: string
+          example: INR
+        model_version:
+          type: string
+        schema_version:
+          type: string
+        request_id:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+
+    PaginatedPredictionList:
+      type: object
+      required:
+        - count
+        - results
+      properties:
+        count:
+          type: integer
+        next:
+          type: string
+          nullable: true
+        previous:
+          type: string
+          nullable: true
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/PredictionRecord'
+
+    LocationsMetadataResponse:
+      type: object
+      required:
+        - schema_version
+        - total_locations
+        - locations
+        - area_bases
+        - categories
+      properties:
+        schema_version:
+          type: string
+          example: "1.0"
+        total_locations:
+          type: integer
+          example: 81
+        locations:
+          type: array
+          items:
+            type: object
+            required:
+              - name
+              - normalized
+            properties:
+              name:
+                type: string
+              normalized:
+                type: string
+        area_bases:
+          type: array
+          items:
+            type: string
+        categories:
+          type: object
+          properties:
+            furnishing:
+              type: array
+              items:
+                type: string
+            transaction_type:
+              type: array
+              items:
+                type: string
+            status:
+              type: array
+              items:
+                type: string
+            facing:
+              type: array
+              items:
+                type: string
+            ownership:
+              type: array
+              items:
+                type: string
+
+    AdminSummaryResponse:
+      type: object
+      required:
+        - users
+        - predictions
+        - currency
+        - server_time
+      properties:
+        users:
+          type: object
+          properties:
+            total:
+              type: integer
+            active:
+              type: integer
+            staff:
+              type: integer
+        predictions:
+          type: object
+          properties:
+            total:
+              type: integer
+            total_volume_inr:
+              type: number
+            average_price_inr:
+              type: number
+            last_24_hours:
+              type: integer
+            last_7_days:
+              type: integer
+        currency:
+          type: string
+          example: INR
+        server_time:
+          type: string
+          format: date-time
+
+    AdminUserListResponse:
+      type: object
+      required:
+        - count
+        - results
+      properties:
+        count:
+          type: integer
+        next:
+          type: string
+          nullable: true
+        previous:
+          type: string
+          nullable: true
+        results:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+                format: uuid
+              email:
+                type: string
+              display_name:
+                type: string
+              is_staff:
+                type: boolean
+              is_active:
+                type: boolean
+              created_at:
+                type: string
+                format: date-time
+              prediction_count:
+                type: integer
+
+    AdminPredictionListResponse:
+      type: object
+      required:
+        - count
+        - results
+      properties:
+        count:
+          type: integer
+        next:
+          type: string
+          nullable: true
+        previous:
+          type: string
+          nullable: true
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/PredictionRecord'
+
+    AdminReportsResponse:
+      type: object
+      required:
+        - period
+        - summary
+        - top_locations
+        - daily
+      properties:
+        period:
+          type: object
+          properties:
+            start_date:
+              type: string
+            end_date:
+              type: string
+            timezone:
+              type: string
+        summary:
+          type: object
+          properties:
+            total_predictions:
+              type: integer
+            total_volume_inr:
+              type: number
+            average_price_inr:
+              type: number
+        top_locations:
+          type: array
+          items:
+            type: object
+            properties:
+              location:
+                type: string
+              count:
+                type: integer
+              volume_inr:
+                type: number
+        daily:
+          type: array
+          items:
+            type: object
+            properties:
+              date:
+                type: string
+              count:
+                type: integer
+              volume_inr:
+                type: number
+
+    AdminModelMetadataResponse:
+      type: object
+      properties:
+        model_id:
+          type: string
+        algorithm:
+          type: string
+        test_evaluation:
+          type: object
+        disclaimer:
+          type: string

@@ -3,13 +3,13 @@
 | Field | Value |
 |---|---|
 | Document | Implementation Plan |
-| Version | 1.4 — Phase 3 implementation complete (ready for review) |
+| Version | 1.5 — Phase 4 implementation approved |
 | Product | Real Estate Price Prediction Platform — India |
 | Related documents | `docs/PRD.md`, `docs/SRS.md`, `docs/ARCHITECTURE.md`, `docs/DATASET_ML_SPEC.md`, `docs/TESTING_PLAN.md` |
 | Delivery strategy | Phase-gated; local-first; deploy online only after local acceptance |
-| Current status | Phase 3 implementation complete — ready for owner review (Phase 0, Phase 1, and Phase 2 approved by product owner) |
-| Last reviewed | 22 October 2026 |
-| Project owner approval | Phase 0, Phase 1, and Phase 2 Approved; Phase 3 Ready for Review |
+| Current status | Phase 4 approved by product owner (Phase 0, Phase 1, Phase 2, Phase 3, and Phase 4 approved) |
+| Last reviewed | 23 October 2026 |
+| Project owner approval | Phase 0, Phase 1, Phase 2, Phase 3, and Phase 4 Approved; Phase 5 Not Started |
 
 > This plan defines the execution sequence, deliverables, verification evidence, and approval gates. It does not mean that any phase has been implemented or passed. Do not start coding until Phase 0 decisions and scope are approved. Do not begin a later phase until the current phase is accepted by the project owner.
 
@@ -52,8 +52,8 @@ All phases start as `NOT STARTED`. Status must be updated only from verified wor
 | 0 | Requirements, architecture, and open decisions | APPROVED | Yes |
 | 1 | Dataset audit and preparation rules | APPROVED | Yes |
 | 2 | Offline ML training and evaluation | APPROVED | Yes |
-| 3 | Independent inference service | READY FOR REVIEW | Yes |
-| 4 | Django application backend | NOT STARTED | Yes |
+| 3 | Independent inference service | APPROVED | Yes |
+| 4 | Django application backend | APPROVED | Yes |
 | 5 | Next.js frontend | NOT STARTED | Yes |
 | 6 | Cross-service integration and quality assurance | NOT STARTED | Yes |
 | 7 | Reproducible local release | NOT STARTED | Yes |
@@ -276,34 +276,36 @@ Implement the application API and data persistence. Django owns authentication, 
 
 ### Tasks
 
-- [ ] Establish the Django project, settings structure, migrations, environment configuration, logging, and separate runtime dependencies.
-- [ ] Implement registration, login, logout, current-user/profile operations, and administrator provisioning according to the approved auth design.
-- [ ] Enforce authorization server-side; users must not edit their role or administrative flags through ordinary profile APIs.
-- [ ] Define database models and indexes for prediction records, normalized input snapshots, numeric INR outputs, timestamps, model version, and correlation ID where available.
-- [ ] Implement locations/input metadata endpoint from the approved supported-location/feature source.
-- [ ] Implement prediction orchestration: validate user request, call the inference API over HTTP, validate response, persist only successful valid predictions, and return a documented response.
-- [ ] Add robust timeout, unavailable-service, malformed-response, and retry behavior. Ensure retries cannot create duplicate successful history records.
-- [ ] Implement paginated personal history with object-level ownership checks.
-- [ ] Implement admin summary, user management, prediction records, date-range reports, model information, and P1 CSV export/analytics according to priority.
-- [ ] Implement consistent JSON error shapes, request limits, pagination caps, authentication throttles/rate limits as approved, and API version prefix.
-- [ ] Generate/update OpenAPI contract and keep it synchronized with implementation.
-- [ ] Add automated unit, API, permission, ownership, input-validation, date-filter, and export-safety tests.
+- [x] Establish the Django project, settings structure, migrations, environment configuration, logging, and separate runtime dependencies.
+- [x] Implement registration, login, logout, current-user/profile operations, and administrator provisioning according to the approved auth design.
+- [x] Enforce authorization server-side; users must not edit their role or administrative flags through ordinary profile APIs.
+- [x] Define database models and indexes for prediction records, normalized input snapshots, numeric INR outputs, timestamps, model version, and correlation ID where available.
+- [x] Implement locations/input metadata endpoint from the approved supported-location/feature source.
+- [x] Implement prediction orchestration: validate user request, call the inference API over HTTP, validate response, persist only successful valid predictions, and return a documented response.
+- [x] Add robust timeout, unavailable-service, malformed-response, and retry behavior. Ensure retries cannot create duplicate successful history records.
+- [x] Implement paginated personal history with object-level ownership checks.
+- [x] Implement admin summary, user management, prediction records, date-range reports, model information, and P1 CSV export/analytics according to priority.
+- [x] Implement consistent JSON error shapes, request limits, pagination caps, authentication throttles/rate limits as approved, and API version prefix.
+- [x] Generate/update OpenAPI contract and keep it synchronized with implementation.
+- [x] Add automated unit, API, permission, ownership, input-validation, date-filter, and export-safety tests.
 
 ### Deliverables
 
 - Independently runnable Django backend.
 - Database models/migrations and environment template.
-- Application OpenAPI contract.
+- Application OpenAPI contract (`contracts/application-api.yaml`).
 - API test suite and backend runbook.
 
 ### Exit criteria
 
-- Migrations apply from a clean local database.
-- Authentication and all protected endpoints follow the approved strategy.
-- Cross-user history access and non-admin access to admin operations are denied by server-side tests.
-- Prediction API handles valid, invalid, timeout, unavailable-service, and malformed-inference-response cases safely.
-- History/report pagination and date filtering tests pass.
-- Product owner approves Phase 4.
+- [x] Migrations apply from a clean local database.
+- [x] Authentication and all protected endpoints follow the approved strategy.
+- [x] Cross-user history access and non-admin access to admin operations are denied by server-side tests.
+- [x] Prediction API handles valid, invalid, timeout, unavailable-service, and malformed-inference-response cases safely.
+- [x] Product owner approves Phase 4 (Approved on 23 October 2026).
+  - CSRF remediation verified with dedicated negative/positive tests on cookie-backed refresh/logout and CSRF bootstrap endpoint.
+  - Admin CSV export is deferred to P1 as approved.
+  - Data-retention / account-deletion policy and global rate throttling are documented follow-up items.
 
 ### Requirements mapping
 
@@ -612,6 +614,7 @@ Online deployment has an additional release gate: production configuration, HTTP
 - Phase 0: **APPROVED** (Architecture alignment and scaffolding verified).
 - Phase 1: **APPROVED** (Dataset audit, reconciliation accounting, and policy decisions finalized).
 - Phase 2: **APPROVED** by product owner on 22 October 2026 (Treatment B model, metrics, and report verified).
-- Phase 3: **READY FOR REVIEW** (FastAPI inference service complete, 40/40 tests passing including real artifact smoke test, contract drift, and OpenAPI 3.0 semantic validation).
-- Phase 4: **NOT STARTED** and strictly not authorized until explicit Phase 3 owner approval.
-- Next release gate: Await product owner review and authorization before initiating Phase 4 (Django application backend).
+- Phase 3: **APPROVED** by product owner on 23 October 2026 (FastAPI inference service verified, 43/43 tests, OpenAPI 3.0.3 semantic validation pass, commit 9316388).
+- Phase 4: **APPROVED** by product owner on 23 October 2026 (Django application backend verified, 45/45 tests, CSRF remediation, OpenAPI 3.0.3 semantic validation pass).
+- Phase 5: **NOT STARTED** (Awaiting product owner authorization before initiating Next.js frontend).
+- Next release gate: Await product owner review and authorization before initiating Phase 5 (Next.js frontend).

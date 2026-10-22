@@ -19,9 +19,18 @@ ALLOWED_HOSTS = [
 if not ALLOWED_HOSTS:
     raise ImproperlyConfigured("ALLOWED_HOSTS environment variable is required in production.")
 
+CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOWED_ORIGINS = [
     origin.strip() for origin in os.environ.get('CORS_ALLOWED_ORIGINS', '').split(',') if origin.strip()
 ]
+raw_csrf = os.environ.get('CSRF_TRUSTED_ORIGINS')
+if raw_csrf:
+    CSRF_TRUSTED_ORIGINS = [origin.strip() for origin in raw_csrf.split(',') if origin.strip()]
+else:
+    CSRF_TRUSTED_ORIGINS = list(CORS_ALLOWED_ORIGINS)
+
+AUTH_COOKIE_SECURE = True
+CSRF_COOKIE_SECURE = True
 
 # Database configuration: Strictly PostgreSQL required in production
 db_name = os.environ.get('POSTGRES_DB')

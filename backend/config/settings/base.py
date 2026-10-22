@@ -30,6 +30,7 @@ INSTALLED_APPS = [
     # Third party apps
     'rest_framework',
     'rest_framework_simplejwt',
+    'rest_framework_simplejwt.token_blacklist',
     'corsheaders',
 
     # Local apps
@@ -38,6 +39,8 @@ INSTALLED_APPS = [
     'apps.predictions.apps.PredictionsConfig',
     'apps.analytics.apps.AnalyticsConfig',
 ]
+
+AUTH_USER_MODEL = 'accounts.User'
 
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
@@ -98,10 +101,11 @@ REST_FRAMEWORK = {
         'rest_framework_simplejwt.authentication.JWTAuthentication',
     ),
     'DEFAULT_PERMISSION_CLASSES': [
-        'rest_framework.permissions.IsAuthenticatedOrReadOnly',
+        'rest_framework.permissions.IsAuthenticated',
     ],
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
     'PAGE_SIZE': 20,
+    'EXCEPTION_HANDLER': 'apps.common.exceptions.custom_exception_handler',
 }
 
 # SimpleJWT Configuration (Approved Architecture Design — Phase 4 Implementation)
@@ -115,6 +119,19 @@ SIMPLE_JWT = {
     'AUTH_HEADER_TYPES': ('Bearer',),
 }
 
+# Cookie Configuration for JWT Refresh Token
+AUTH_COOKIE_REFRESH = 'refresh_token'
+AUTH_COOKIE_PATH = '/api/v1/auth/'
+AUTH_COOKIE_SECURE = os.environ.get('AUTH_COOKIE_SECURE', 'False').lower() in ('true', '1')
+AUTH_COOKIE_SAMESITE = 'Lax'
+
+# CORS & CSRF Configuration
+CORS_ALLOW_CREDENTIALS = True
+CSRF_COOKIE_SAMESITE = 'Lax'
+CSRF_COOKIE_SECURE = AUTH_COOKIE_SECURE
+CSRF_COOKIE_HTTPONLY = False
+
 # Inference Service Configuration
-INFERENCE_SERVICE_URL = os.environ.get('INFERENCE_SERVICE_URL', 'http://localhost:8001')
+INFERENCE_SERVICE_URL = os.environ.get('INFERENCE_SERVICE_URL', 'http://127.0.0.1:8001')
+INFERENCE_SERVICE_TOKEN = os.environ.get('INFERENCE_SERVICE_TOKEN', '')
 INFERENCE_TIMEOUT_SECONDS = int(os.environ.get('INFERENCE_TIMEOUT_SECONDS', '10'))
