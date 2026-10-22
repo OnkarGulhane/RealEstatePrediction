@@ -64,9 +64,18 @@ def main():
 
     print("\n--- 2. Duplicate Row Analysis ---")
     dups = results["duplicates"]
-    print(f"Exact full-row duplicates (all 21 cols):              {dups['exact_full_duplicates']:,}")
-    print(f"Duplicate rows excluding 'Index' (20 property cols):  {dups['duplicates_excluding_index']:,}")
-    print(f"Unique property row combinations:                     {dups['unique_property_combinations']:,}")
+    print(f"Across All Raw Rows (187,531 total):")
+    print(f"  Exact full-row duplicates (all 21 cols):              {dups['exact_full_duplicates']:,}")
+    print(f"  Duplicate rows excluding 'Index' (20 property cols):  {dups['duplicates_excluding_index']:,}")
+    print(f"  Unique property row combinations (all targets):       {dups['unique_property_combinations']:,}")
+    if "valid_target_unique" in dups:
+        print(f"Within Valid Supervised Target Subset ({dups['valid_target_rows']:,} rows):")
+        print(f"  Duplicate rows excluding 'Index':                     {dups['valid_target_duplicates']:,}")
+        print(f"  Unique property combinations (eligible for modeling): {dups['valid_target_unique']:,}")
+        print(f"Within 'Call for Price' Subset ({dups['call_for_price_rows']:,} rows):")
+        print(f"  Duplicate rows excluding 'Index':                     {dups['call_for_price_duplicates']:,}")
+        print(f"  Unique property combinations:                         {dups['call_for_price_unique']:,}")
+
 
     print("\n--- 3. Target Variable 'Amount(in rupees)' Breakdown ---")
     tgt = results["target"]

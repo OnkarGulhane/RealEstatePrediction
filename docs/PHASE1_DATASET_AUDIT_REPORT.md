@@ -201,19 +201,30 @@ During product owner review, a 1-row discrepancy was identified between the repo
 
 ---
 
-### 4.4 Duplicate Analysis
+### 4.4 Duplicate Analysis and Supervised-Eligible Record Accounting
 
-| Duplicate Scope | Exact Count | Proportion | Interpretation & Impact |
-| :--- | :--- | :--- | :--- |
-| **Full Row Duplicates (all 21 columns including Index)** | **0** | 0.00% | The `Index` column makes each raw CSV row syntactically unique. |
-| **Duplicates Excluding Index (20 property columns)** | **119,339** | **63.64%** | Over 63% of rows in the CSV are repeated property records. |
-| **Unique Property Record Signatures** | **68,192** | 36.36% | Exactly 68,192 unique property configurations exist across 187,531 rows. |
-| **Repeating Group Membership** | 122,292 | 65.21% | 122,292 rows belong to duplicate clusters originating from 2,953 distinct properties. |
+Exact duplicate analysis was performed by comparing all 20 source property columns after excluding the synthetic sequential identifier `Index`:
+`['Title', 'Description', 'Amount(in rupees)', 'Price (in rupees)', 'location', 'Carpet Area', 'Status', 'Floor', 'Transaction', 'Furnishing', 'facing', 'overlooking', 'Society', 'Bathroom', 'Balcony', 'Car Parking', 'Ownership', 'Super Area', 'Dimensions', 'Plot Area']`
 
-#### Deduplication Policy Recommendation:
-- Blindly deduplicating drops 63.64% of the dataset, which may bias representation if identical units in massive high-rise developments were listed separately.
-- Conversely, keeping all duplicates without grouped cross-validation will cause severe data leakage between training and validation splits.
-- **Phase 1 Decision:** In compliance with strict boundaries, **no rows were deleted in the prepared output**. All 177,847 valid supervised rows are preserved locally, and the duplicate policy is formally deferred to the Product Owner for approval before Phase 2.
+#### Comprehensive Duplicate and Target Subset Reconciliation Table
+
+| Subset / Category | Input Rows | Unique Configurations (Excl. Index) | Duplicate Occurrences (Excl. Index) | Arithmetic Reconciliation Check |
+| :--- | :--- | :--- | :--- | :--- |
+| **Entire Raw Dataset (All Rows)** | **187,531** | **68,192** | **119,339** | `68,192 + 119,339 = 187,531` |
+| **Valid Numeric Target (Supervised Set)** | **177,847** | **65,255** | **112,592** | `65,255 + 112,592 = 177,847` |
+| **`Call for Price` (Excluded Target)** | **9,684** | **2,937** | **6,747** | `2,937 + 6,747 = 9,684` |
+| **Blank / Unparseable Target** | **0** | **0** | **0** | Zero detected |
+| **Exact Cross-Category Sum** | **187,531** | `65,255 + 2,937 = 68,192` | `112,592 + 6,747 = 119,339` | **100% exact cross-reconciliation** |
+
+#### Crucial Distinction for Modeling
+- **68,192** is the count of distinct 20-column property records across the **entire 187,531 raw CSV rows** (including `Call for Price`).
+- **65,255** is the exact number of distinct full-record configurations **eligible for supervised model training** within the 177,847 valid-target subset after excluding `Call for Price`.
+- If exact duplicates are filtered from the supervised subset during Phase 2 training preparation, exactly **112,592** duplicate listing occurrences will be excluded, yielding a primary training view of **65,255** records.
+
+#### Deduplication Policy and Boundary
+- In accordance with Phase 1 boundaries, **no rows were deleted in the prepared output**. All 177,847 valid supervised rows are preserved in local interim storage `ml/training/data/interim/prepared_properties.csv`.
+- The creation of the deduplicated primary training view (65,255 unique records) is strictly scheduled for Phase 2 entry.
+
 
 ---
 
@@ -308,7 +319,8 @@ Command: `python -m pytest ml/training/tests -v`
 The following four dataset and modeling policy decisions have been formally **APPROVED** by the product owner for execution in Phase 2:
 
 1. **Exact Duplicates Policy (APPROVED):**
-   - The primary training view in Phase 2 must exclude exact duplicate property rows when comparing all property columns except the unique `Index` identifier (68,192 unique property configurations retained).
+   - The primary training view in Phase 2 must exclude exact duplicate property rows when comparing all property columns except the unique `Index` identifier.
+   - Within the 177,847 records with valid numeric targets, this deduplication policy will retain exactly **65,255 unique property configurations** eligible for supervised modeling (removing 112,592 duplicate occurrences). The previously cited figure of 68,192 represents distinct configurations across the entire 187,531 raw rows prior to target filtering (inclusive of 2,937 unique `Call for Price` listings).
    - The original raw CSV (`ml/training/data/raw/house_prices.csv`) and the existing full prepared output (`ml/training/data/interim/prepared_properties.csv`, 177,847 rows) must never be overwritten or deleted.
    - Phase 2 will report exact input/output counts and retain an auditable row/group mapping.
    - Phase 2 will evaluate whether a defensible grouping key exists for validation; no property identities will be invented. If no reliable grouping key exists, that limitation will be documented and claiming `GroupKFold` will be avoided.

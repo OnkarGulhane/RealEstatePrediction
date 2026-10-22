@@ -111,10 +111,22 @@ def audit_dataset(data_path: str) -> dict[str, Any]:
             "count_under_1_lac": int((prices_series < 100_000).sum()) if valid_count > 0 else 0,
             "count_over_100_cr": int((prices_series > 1_000_000_000).sum()) if valid_count > 0 else 0,
         }
+
+        # Subset duplicate analysis:
+        valid_mask = pd.Series([s == "VALID" for s in statuses])
+        df_valid = df[valid_mask]
+        valid_duplicates = int(df_valid.duplicated(subset=property_cols).sum()) if len(df_valid) > 0 else 0
+        valid_unique = len(df_valid) - valid_duplicates
+
+        cfp_mask = pd.Series([s == "CALL_FOR_PRICE" for s in statuses])
+        df_cfp = df[cfp_mask]
+        cfp_duplicates = int(df_cfp.duplicated(subset=property_cols).sum()) if len(df_cfp) > 0 else 0
+        cfp_unique = len(df_cfp) - cfp_duplicates
     else:
         valid_count = lac_count = cr_count = call_for_price_count = 0
         blank_target_count = unparseable_count = 0
         price_stats = {}
+        valid_duplicates = valid_unique = cfp_duplicates = cfp_unique = 0
 
     # 4. Area overlap and unit distributions
     has_carpet = df["Carpet Area"].notnull() if "Carpet Area" in df.columns else pd.Series([False] * total_rows)
@@ -160,6 +172,12 @@ def audit_dataset(data_path: str) -> dict[str, Any]:
             "exact_full_duplicates": exact_full_duplicates,
             "duplicates_excluding_index": duplicates_excl_index,
             "unique_property_combinations": unique_property_combinations,
+            "valid_target_rows": valid_count,
+            "valid_target_duplicates": valid_duplicates,
+            "valid_target_unique": valid_unique,
+            "call_for_price_rows": call_for_price_count,
+            "call_for_price_duplicates": cfp_duplicates,
+            "call_for_price_unique": cfp_unique,
         },
         "target": {
             "column_name": target_col,

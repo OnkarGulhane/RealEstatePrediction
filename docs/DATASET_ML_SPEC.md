@@ -29,7 +29,10 @@ The Phase 1 deterministic audit of the raw `house_prices.csv` dataset establishe
   - Partition Sum: `106,858 + 79,846 + 0 + 827 = 187,531` (**100% exact match**).
 - **Duplicate Analysis:**
   - Full-row duplicates (including `Index`): **0**.
-  - Duplicate listings excluding `Index`: **119,339 rows** (63.64% of CSV), leaving **68,192 unique property configurations** across 2,953 repeating property clusters.
+  - All-raw duplicate listings excluding `Index`: **119,339 rows** (leaving **68,192 unique property configurations** across all target categories).
+  - Valid-target subset (177,847 rows): **65,255 unique property configurations** eligible for supervised training (112,592 duplicate occurrences).
+  - `Call for Price` subset (9,684 rows): **2,937 unique property configurations** (6,747 duplicate occurrences).
+  - Reconciled cross-sum: `65,255 + 2,937 = 68,192` unique; `112,592 + 6,747 = 119,339` duplicates.
 - **100% Blank Columns (Dropped):** `Dimensions` (187,531 nulls) and `Plot Area` (187,531 nulls).
 - **Target Leakage Fields (Excluded):** `Price (in rupees)` (rate/sqft derived from target) and `Description` (quotes asking prices verbatim).
 
@@ -80,7 +83,8 @@ Raw Data (house_prices.csv)
 **Approved by Product Owner on 22 October 2026:**
 
 1. **Exact Duplicates Policy (APPROVED):**
-   - The primary training view in Phase 2 must exclude exact duplicate property rows when comparing all property columns except the unique `Index` identifier (retaining the 68,192 unique property configurations).
+   - The primary training view in Phase 2 must exclude exact duplicate property rows when comparing all property columns except the unique `Index` identifier.
+   - Within the 177,847 records with valid numeric targets, this retains exactly **65,255 unique property configurations** eligible for supervised modeling (removing 112,592 duplicate occurrences). The count of 68,192 represents distinct configurations across the entire 187,531 raw rows prior to target filtering (including 2,937 unique `Call for Price` records).
    - The original raw CSV (`ml/training/data/raw/house_prices.csv`) and the existing full prepared dataset (`ml/training/data/interim/prepared_properties.csv`, 177,847 rows) will remain intact and will never be overwritten.
    - Phase 2 will report exact input/output counts and retain an auditable row/group mapping.
    - Phase 2 will evaluate whether a defensible grouping key exists for validation; no property identities will be invented. If no reliable grouping key exists, that limitation will be documented and claiming `GroupKFold` will be avoided.

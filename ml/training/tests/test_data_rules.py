@@ -254,3 +254,23 @@ class TestDuplicateAnalysisReproducibility:
 
         # Duplicate check excluding Index:
         assert df.drop(columns=["Index"]).duplicated().sum() == 2
+
+    def test_subset_duplicate_counts(self, tmp_path):
+        csv_file = tmp_path / "test_dups.csv"
+        df = pd.DataFrame({
+            "Index": [1, 2, 3, 4, 5],
+            "Amount(in rupees)": ["50 Lac", "50 Lac", "Call for Price", "Call for Price", "60 Lac"],
+            "location": ["Area A", "Area A", "Area B", "Area B", "Area C"],
+        })
+        df.to_csv(csv_file, index=False)
+
+        res = audit_dataset(str(csv_file))
+        dups = res["duplicates"]
+        assert dups["unique_property_combinations"] == 3
+        assert dups["valid_target_rows"] == 3
+        assert dups["valid_target_unique"] == 2
+        assert dups["valid_target_duplicates"] == 1
+        assert dups["call_for_price_rows"] == 2
+        assert dups["call_for_price_unique"] == 1
+        assert dups["call_for_price_duplicates"] == 1
+        assert dups["valid_target_unique"] + dups["call_for_price_unique"] == dups["unique_property_combinations"]
