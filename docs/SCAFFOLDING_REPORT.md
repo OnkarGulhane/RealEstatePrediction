@@ -20,19 +20,19 @@ In accordance with `prompts/ANTIGRAVITY_SCAFFOLDING_PROMPT.md`, the repository h
 2. **Contracts:**
    - Authored versioned OpenAPI 3.0 contracts: `contracts/application-api.yaml` (Next.js ↔ Django) and `contracts/inference-api.yaml` (Django ↔ Inference).
 3. **Frontend (`frontend/`):**
-   - Next.js 14 (App Router) + TypeScript.
+   - Next.js 16 (App Router) + TypeScript.
    - Minimal home page explicitly displaying scaffold state.
    - Route placeholders: `(public)/about`, `(auth)/login`, `predict`, `dashboard`, `admin`.
    - Typed API base-URL helper (`src/lib/api-client.ts`) referencing `NEXT_PUBLIC_API_BASE_URL`.
    - Production build, TypeScript check, and ESLint validated.
 4. **Application Backend (`backend/`):**
-   - Django 5.1 + Django REST Framework + django-cors-headers.
+   - Django 5.2 LTS + Django REST Framework + django-cors-headers.
    - Split settings architecture (`base.py`, `development.py`, `production.py`).
    - Apps registered: `accounts`, `properties`, `predictions`, `analytics`.
    - Inference HTTP client boundary (`apps/predictions/clients/inference_client.py`).
    - Health endpoint (`GET /api/v1/health/`) and automated test suite.
 5. **Inference Service (`inference-service/`):**
-   - Standalone FastAPI application (*Provisional decision pending owner approval*).
+   - Standalone FastAPI application (Approved architecture decision).
    - Independent virtual environment and runtime dependencies.
    - Liveness endpoint (`GET /health/live` -> 200).
    - Truthful readiness endpoint (`GET /health/ready` -> 503 when no model artifact exists; never fake).
@@ -49,7 +49,9 @@ In accordance with `prompts/ANTIGRAVITY_SCAFFOLDING_PROMPT.md`, the repository h
 
 ---
 
-## 2. Directory Structure
+## 2. Tracked Repository Directory Structure
+
+> **Note:** The directory listing below represents canonical tracked repository files (refer to [docs/FOLDER_STRUCTURE.md](file:///e:/RealEstatePrediction/docs/FOLDER_STRUCTURE.md) for full canonical documentation). Local development-only folders (such as `.venv/`, `node_modules/`, `.next/`, `__pycache__/`) and legacy uncommitted draft duplicates are strictly excluded from git tracking.
 
 ```text
 e:/RealEstatePrediction/
@@ -64,17 +66,16 @@ e:/RealEstatePrediction/
 │   ├── ARCHITECTURE.md
 │   ├── DATASET_ML_SPEC.md
 │   ├── DEPLOYMENT_GUIDE.md
+│   ├── FOLDER_STRUCTURE.md
 │   ├── IMPLEMENTATION_PLAN.md
 │   ├── OPEN_DECISIONS.md
-│   ├── PRD (3).md
 │   ├── PRD.md
 │   ├── SCAFFOLDING_REPORT.md
-│   ├── SRS (2).md
 │   ├── SRS.md
 │   └── TESTING_PLAN.md
 ├── frontend/
 │   ├── .env.example
-│   ├── .eslintrc.json
+│   ├── eslint.config.mjs
 │   ├── next.config.mjs
 │   ├── package.json
 │   ├── package-lock.json
@@ -94,11 +95,10 @@ e:/RealEstatePrediction/
 │   │   ├── hooks/
 │   │   ├── lib/api-client.ts
 │   │   └── types/index.ts
-│   ├── tests/
+│   ├── tests/api_client.test.ts
 │   └── e2e/
 ├── backend/
 │   ├── .env.example
-│   ├── .venv/
 │   ├── manage.py
 │   ├── pytest.ini
 │   ├── requirements.txt
@@ -116,10 +116,11 @@ e:/RealEstatePrediction/
 │   │   ├── predictions/
 │   │   │   └── clients/inference_client.py
 │   │   └── analytics/
-│   └── tests/test_health.py
+│   └── tests/
+│       ├── test_health.py
+│       └── test_production_settings.py
 ├── inference-service/
 │   ├── .env.example
-│   ├── .venv/
 │   ├── README.md
 │   ├── requirements.txt
 │   ├── app/
@@ -158,17 +159,17 @@ e:/RealEstatePrediction/
 
 ---
 
-## 3. Verification Commands & Real Execution Results
+## 3. Verification Commands & Execution Results
 
 | Area | Command Executed | Result | Details |
 |---|---|---|---|
 | **Structure** | `powershell -ExecutionPolicy Bypass -File scripts/check_scaffold.ps1` | **PASS** | 30/30 directory and file integrity checks passed. |
-| **Frontend** | `npm.cmd run lint` | **PASS** | No ESLint errors or warnings. |
-| **Frontend** | `npm.cmd run typecheck` | **PASS** | TypeScript compilation verified without errors. |
-| **Frontend** | `npm.cmd run build` | **PASS** | Next.js production build succeeded; 9 static routes generated. |
-| **Backend** | `python manage.py check` | **PASS** | System check identified no issues (0 silenced). |
-| **Backend** | `python manage.py migrate` | **PASS** | Default migrations applied to SQLite test DB. |
-| **Backend** | `pytest` | **PASS** | 1 test passed (Health check endpoint returns status ok). |
+| **Frontend** | `npm.cmd test` | **PASS** | Native Node.js unit tests for API client base URL logic passed (2/2). |
+| **Frontend** | `npm.cmd run lint` | **PASS** | ESLint 9 flat configuration verified cleanly; 0 errors, 0 warnings. |
+| **Frontend** | `npm.cmd run typecheck` | **PASS** | TypeScript compilation verified without errors (`tsc --noEmit`). |
+| **Frontend** | `npm.cmd run build` | **PASS** | Next.js 16 production build succeeded; 8 static routes generated. |
+| **Backend** | `python manage.py check` | **PASS** | Django 5.2 system check identified no issues (0 silenced). |
+| **Backend** | `pytest` | **PASS** | 3 tests passed (health check + production postgres guard tests). |
 | **Inference** | `pytest` | **PASS** | 3 tests passed (Liveness=200, Readiness=503, Predict=503). |
 | **Offline ML** | `python <script> --help` | **PASS** | All 4 CLI entry points respond cleanly with usage information. |
 | **Offline ML** | Python module import | **PASS** | `real_estate_ml_training` submodules import cleanly. |
@@ -176,18 +177,22 @@ e:/RealEstatePrediction/
 
 ---
 
-## 4. Pending Decisions & Approval Gate
+## 4. Approved Decisions & Remaining Open Items
 
-The following items are documented in `docs/OPEN_DECISIONS.md` and remain pending product-owner sign-off:
-1. **Inference Framework Selection:** FastAPI is provisionally scaffolded; requires formal product-owner approval before Phase 3 implementation.
-2. **Dataset Provenance & Licence:** Verification of `house_prices.csv` licence terms and redistribution rights before Phase 1.
-3. **Duplicate Record Strategy:** Resolving 119,339 duplicate occurrences before model training.
-4. **Target & Area Parsing Rules:** Rules for `Amount(in rupees)` parsing and `Carpet Area` vs `Super Area` distinction.
-5. **Authentication Mechanism:** Deciding between HttpOnly Session cookies vs Bearer JWT tokens for Phase 4.
+### Approved Phase 0 Decisions
+1. **Inference Framework Selection:** **FastAPI** is approved for `inference-service/` standalone prediction serving.
+2. **Authentication Mechanism:** **Django REST Framework with SimpleJWT** is approved (in-memory access JWT, refresh token in HttpOnly cookie with rotation/revocation; implementation in Phase 4).
+3. **Database Architecture:** **SQLite** approved for local development; **PostgreSQL** approved and strictly enforced for production deployment (no silent fallback).
+4. **Dependency Versions:** Pinned to supported LTS lines: Next.js 16.4.2 (Active LTS), React 19.0.0, Django 5.2.18 LTS, DRF 3.18.3, SimpleJWT 5.5.1, FastAPI 0.115.14.
+
+### Pending Phase 1 Decisions
+1. **Dataset Provenance & Licence:** Verification of `house_prices.csv` licence terms and redistribution rights before Phase 1.
+2. **Duplicate Record Strategy:** Resolving 119,339 duplicate occurrences before model training.
+3. **Target & Area Parsing Rules:** Rules for `Amount(in rupees)` parsing and `Carpet Area` vs `Super Area` distinction.
 
 ---
 
 ## 5. Recommendation
 
-- **Status:** **SCAFFOLD READY FOR REVIEW**
+- **Status:** **PHASE 0 ALIGNMENT COMPLETE — READY FOR REVIEW**
 - **Action:** Stop and request product-owner review and approval before beginning Phase 1 (Dataset Audit and Preparation).

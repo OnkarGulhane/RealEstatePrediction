@@ -296,15 +296,15 @@ Offline ML training workflow
 
 | Layer | Planned choice | Notes |
 |---|---|---|
-| Frontend | Next.js + TypeScript | Responsive pages, forms, dashboards, charts, typed API client. |
-| Application backend | Python + Django REST Framework | Authentication, permissions, business rules, persistence, reporting. |
-| Inference service | Independent Python HTTP service | Framework is pending approval; FastAPI is the current recommendation. |
-| ML training | Python, Pandas, NumPy, scikit-learn | Offline data audit, model training, evaluation, and artifact creation. |
-| Artifact persistence | joblib or another explicitly approved trusted format | Full fitted pipeline plus metadata; never accept arbitrary user-uploaded artifacts. |
-| Local database | SQLite initially | Simplifies early local development. |
-| Production database | PostgreSQL preferred | Final choice depends on hosting, persistence, and operations requirements. |
-| API contracts | Versioned OpenAPI/contract documentation | Exact schemas belong in the SRS/architecture documents. |
-| Testing | Python test suite, frontend tests, API and end-to-end tests | Test each service independently and then test integrated flows. |
+| Frontend | Next.js (16.x LTS) + TypeScript | Responsive pages, forms, dashboards, charts, typed API client. |
+| Application backend | Python + Django (5.2 LTS) REST Framework | Authentication, permissions, business rules, persistence, reporting. |
+| Inference service | Independent Python HTTP service (FastAPI) | Approved for standalone HTTP prediction serving and Pydantic schema validation. |
+| ML training | Python, pandas, NumPy, scikit-learn | Offline data audit, model training, evaluation, and artifact creation. |
+| Artifact persistence | joblib + metadata.json | Full fitted pipeline plus metadata; never accept arbitrary user-uploaded artifacts. |
+| Local database | SQLite | Standard zero-configuration local development database. |
+| Production database | PostgreSQL | Enforced for production deployment (no silent fallback to SQLite). |
+| API contracts | Versioned OpenAPI 3.0 YAML | Formal contracts for frontend ↔ backend and backend ↔ inference. |
+| Testing | Python test suite (pytest), frontend tests (Node test runner), linting and builds | Test each service independently and then test integrated flows. |
 
 ### 10.3 Independent deployability requirements
 
@@ -388,19 +388,21 @@ The roadmap is intentionally high-level; the detailed task list, requirement map
 | Service or database outage | Incomplete prediction workflow | Use timeouts, safe errors, health checks, and deployment verification. |
 | Unauthorized data access | Privacy/security breach | Enforce ownership/role checks in the backend and test negative cases. |
 
-## 16. Decisions to Resolve Before the Relevant Phase
+## 16. Approved Architecture Decisions & Remaining Open Issues
 
-The following are intentionally not presented as already decided:
+### 16.1 Approved Phase 0 Decisions
+1. **Inference framework:** **FastAPI** is approved for the independent `inference-service/`. Django REST Framework remains the application backend.
+2. **Authentication design:** **Django REST Framework with SimpleJWT** is approved (short-lived in-memory access token, refresh token in HttpOnly cookie with rotation/revocation, authoritative backend authorization). Full feature implementation is scheduled for Phase 4.
+3. **Database strategy:** **SQLite** is approved for local development; **PostgreSQL** is approved and required for production deployment (enforced in `config.settings.production` without silent SQLite fallback).
 
-1. **Dataset licence and provenance:** verify the exact original source/version, applicable licence, attribution, and redistribution permissions.
+### 16.2 Remaining Open Decisions (Pending Evidence or Relevant Phases)
+1. **Dataset licence and provenance:** verify the exact original source/version, applicable licence, attribution, and redistribution permissions before any dataset publication.
 2. **Duplicate strategy:** establish why records repeat when `Index` is excluded and approve the deduplication policy before splitting data for model evaluation.
 3. **Area strategy:** decide how Carpet Area and Super Area are handled, which units can be converted reliably, and how the area basis is represented.
 4. **Location policy:** normalize aliases/casing and decide how to handle unsupported or low-sample locations.
-5. **Inference framework:** FastAPI is recommended for the independent inference service but requires explicit approval. Django REST Framework remains the application backend.
-6. **Authentication design:** choose a secure session/cookie or token pattern based on deployment domains, CSRF needs, and hosting constraints.
-7. **Hosting and domain:** decide after local acceptance tests; the choice affects production configuration and operations.
-8. **Data retention and export:** finalize retention expectations and the fields permitted in administrator CSV exports before deployment.
-9. **Model benchmark:** reassess the proposed 10% MAE-improvement target after a valid baseline is measured, without manipulating the evaluation to force a pass.
+5. **Hosting and domain:** finalize production hosting provider and public domain after local acceptance tests.
+6. **Data retention and export:** finalize retention expectations and the fields permitted in administrator CSV exports before deployment.
+7. **Model benchmark:** reassess the proposed 10% MAE-improvement target after a valid baseline is measured, without manipulating the evaluation to force a pass.
 
 ## 17. Relationship to Other Project Documents
 

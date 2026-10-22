@@ -57,9 +57,9 @@ Mandatory boundaries:
 
 ### Inference framework decision
 
-The planning documents currently identify **FastAPI as the recommended option, pending explicit approval**. For scaffold purposes only, create the minimum `inference-service/` skeleton using FastAPI and record this choice as **PROVISIONAL / REQUIRES OWNER APPROVAL** in an architecture decision note. Do not treat this as final approval for inference business logic or Phase 3. Do not begin full inference implementation in this task.
+The product owner has formally approved **FastAPI** as the framework for `inference-service/`. It provides independent HTTP prediction serving, Pydantic request/response schema validation, and asynchronous execution.
 
-Authentication strategy, final package versions, hosting, production database, and dataset-cleaning policy may also remain pending. Represent them as documented decisions/placeholders; do not guess secrets or business rules.
+Authentication architecture is also approved as **Django REST Framework with SimpleJWT** (short-lived in-memory access token, refresh token in HttpOnly cookie, rotation/revocation, backend authoritative permissions; implementation scheduled for Phase 4). Database strategy is approved as SQLite for local development and PostgreSQL strictly required for production. Dataset licence, duplicate policy, and area unit conversion outcomes remain pending Phase 1 audit evidence.
 
 ---
 
@@ -209,12 +209,12 @@ You may add essential files required for a framework to run (such as Django `app
 
 ### Step 4 — Create a minimal inference-service scaffold
 
-- Use FastAPI for the scaffold only as described in the provisional decision above. Add a minimal app entry point, configuration module, request/response schema placeholder, and separate tests.
+- Use FastAPI for the scaffold (approved architecture decision). Add a minimal app entry point, configuration module, request/response schema placeholder, and separate tests.
 - Add `GET /health/live` returning liveness, independent of model availability.
 - Add `GET /health/ready` that reflects actual artifact readiness. If no reviewed model artifact exists, return a truthful not-ready status (for example HTTP 503); never fake model readiness.
 - Add a prediction route only as a clearly incomplete placeholder if needed by the agreed API contract. If model artifacts are absent, it must return a documented unavailable response (HTTP 503), not a made-up price. Do not implement model loading/prediction logic beyond a safe placeholder in this scaffold phase.
 - Include only runtime dependencies in `inference-service/requirements.txt`, pinned compatibly with the selected environment. Do not install the training stack into inference unnecessarily.
-- Document that FastAPI remains provisional until the owner approves the architecture decision before full Phase 3 implementation.
+- Document the approved FastAPI framework decision in architecture records before Phase 3 service implementation.
 
 ### Step 5 — Create the offline ML training scaffold
 
@@ -236,8 +236,8 @@ You may add essential files required for a framework to run (such as Django `app
 ### Step 7 — Documentation and operational scripts
 
 - Create/update `README.md` with architecture, folder responsibilities, prerequisites, setup commands for Windows PowerShell, per-service start commands, test commands, and explicit notes about what is not implemented yet.
-- Create `docs/ARCHITECTURE.md` with the actual scaffold state, service boundaries, local ports, and the provisional FastAPI decision.
-- Create `docs/OPEN_DECISIONS.md` listing unresolved decisions without pretending they are approved.
+- Create `docs/ARCHITECTURE.md` with the actual scaffold state, service boundaries, local ports, and the approved FastAPI and authentication decisions.
+- Create `docs/OPEN_DECISIONS.md` tracking approved Phase 0 decisions and remaining open dataset/hosting decisions.
 - Create `docs/SCAFFOLDING_REPORT.md` as the final implementation evidence report.
 - Create `docs/DATASET_ML_SPEC.md`, `docs/TESTING_PLAN.md`, and `docs/DEPLOYMENT_GUIDE.md` as clearly marked starter documents if they do not already exist; do not overwrite approved detailed documents.
 - Create Windows PowerShell scripts that use repo-relative paths, fail fast on errors, check prerequisites, and never silently delete files. `setup_dev.ps1` may install per-service dependencies only with an explicit usage note; `run_local.ps1` should start each service in separate terminals/processes or print reliable manual commands rather than hiding logs; `check_scaffold.ps1` should perform safe structural checks.
@@ -300,7 +300,7 @@ When finished, stop after scaffold verification and report:
 2. The final folder tree (omit noisy generated folders like `node_modules` and virtual environments).
 3. Exact local start commands for each service.
 4. Exact test/build/check commands executed and their real results, labelled `PASS`, `FAIL`, or `NOT RUN`.
-5. Pending decisions (especially provisional FastAPI approval, dataset licence, cleaning rules, authentication design, and production hosting).
+5. Approved architecture decisions (FastAPI, SimpleJWT auth design, DB strategy) and remaining pending decisions (dataset licence, duplicate investigation, and cleaning rules).
 6. Any unresolved errors or environmental blockers.
 7. Phase status must be **SCAFFOLD READY FOR REVIEW**, not “project complete” and not “Phase 1 approved”.
 8. STOP and ask for the project owner's approval before implementing features or starting Phase 1.

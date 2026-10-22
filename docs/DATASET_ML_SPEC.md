@@ -61,3 +61,18 @@ Raw Data (house_prices.csv)
       - Exports single pipeline artifact (model_pipeline.joblib)
       - Generates metadata.json
 ```
+
+---
+
+## 4. Approved Dataset Publication & Cleaning Principles
+
+The following principles are approved by the product owner for Phase 1 data work:
+
+1. **Redistribution & Commit Policy:** Raw or cleaned dataset files must NOT be committed to git or redistributed until original source, licence, attribution, and redistribution rights are verified.
+2. **Index Feature Exclusion:** `Index` is strictly an arbitrary row index and is not a model feature.
+3. **Duplicate Investigation:** Audit exact and near-duplicate listing rows rigorously; do not blindly delete all repeated rows without evidence. Establish a leakage-aware split after duplicate investigation.
+4. **Deterministic Target Parsing:** Parse supported Lac/Cr values into numeric INR using deterministic, tested rules. Exclude `Call for Price` and unparseable targets from supervised training and report exact counts/reasons.
+5. **Area Representation:** Do not conflate `Carpet Area` and `Super Area`. Convert only verified area units; do not guess unknown regional units.
+6. **Leakage & Unclear Field Exclusion:** Exclude unclear or target-leaking fields such as `Description` and `Price (in rupees)` unless their provenance and derivation are explicitly verified.
+7. **Missing & Extreme Value Handling:** Handle missing values using transformations fitted strictly on training data splits. Investigate extreme values rather than blindly deleting them.
+8. **Pending Phase 1 Evidence:** The exact deduplication policy, final feature set, area conversion outcomes, and eligible row counts remain pending Phase 1 audit evidence.

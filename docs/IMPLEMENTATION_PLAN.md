@@ -34,11 +34,11 @@
 
 The approved target architecture is a monorepo with independently runnable components:
 
-- `frontend/`: Next.js + TypeScript user interface.
-- `backend/`: Python + Django REST Framework application API, authentication, persistence, history, admin/reporting.
-- `inference-service/`: separate Python HTTP service for loading the approved model pipeline and generating estimates. FastAPI is the recommended framework, pending explicit approval in Phase 0.
+- `frontend/`: Next.js (16.x LTS) + TypeScript user interface.
+- `backend/`: Python + Django (5.2 LTS) REST Framework application API, authentication, persistence, history, admin/reporting.
+- `inference-service/`: separate Python HTTP service using **FastAPI** (approved) for loading the approved model pipeline and generating estimates.
 - `ml/training/`: offline data audit, cleaning, experimentation, training, evaluation, and candidate artifact creation.
-- `contracts/`: versioned API contracts for Next.js ↔ Django and Django ↔ inference service.
+- `contracts/`: versioned OpenAPI 3.0 contracts for Next.js ↔ Django and Django ↔ inference service.
 - `docs/`: approved product, software, architecture, dataset/ML, testing, and deployment documents.
 
 The inference service must not own user accounts or prediction history. Django owns those records. The browser must not call internal inference endpoints directly. Live user requests must never trigger model training.
@@ -95,30 +95,30 @@ Confirm the product scope and decisions needed to start implementation without a
 
 ### Tasks
 
-- [ ] Review PRD, SRS, and folder structure for conflicts and stale references.
-- [ ] Confirm the monorepo boundary and independent lifecycle of frontend, backend, inference, and training.
-- [ ] Decide the inference framework. Recommended default: FastAPI for `inference-service/`; Django REST Framework remains the application backend.
-- [ ] Decide authentication approach for Next.js ↔ Django: session/cookie or token strategy, CSRF behavior, CORS origins, cookie settings, and expiry/refresh behavior if applicable.
-- [ ] Agree API contract format and versioning. Recommended: OpenAPI YAML for both application API and inference API.
-- [ ] Confirm dataset usage licence/provenance investigation owner and whether the raw dataset may be stored in the repository or redistributed.
-- [ ] Confirm local runtime versions and dependency-management approach for Node.js and Python; pin/lock dependencies per service.
-- [ ] Confirm which P0 features must be included in the first local release and which P1 features may follow.
-- [ ] Create/update `docs/ARCHITECTURE.md`, `docs/IMPLEMENTATION_PLAN.md`, `docs/DATASET_ML_SPEC.md`, and `docs/TESTING_PLAN.md` as planning artifacts.
-- [ ] Record the unresolved decisions, chosen options, reasons, and any accepted risks.
+- [x] Review PRD, SRS, and folder structure for conflicts and stale references.
+- [x] Confirm the monorepo boundary and independent lifecycle of frontend, backend, inference, and training.
+- [x] Decide the inference framework: **FastAPI** approved for `inference-service/`; Django REST Framework remains the application backend.
+- [x] Decide authentication approach for Next.js ↔ Django: **DRF + SimpleJWT** approved (short-lived in-memory access token, refresh token in HttpOnly cookie with rotation/revocation, authoritative backend authorization; implementation in Phase 4).
+- [x] Agree API contract format and versioning: OpenAPI 3.0 YAML for both application API (`contracts/application-api.yaml`) and inference API (`contracts/inference-api.yaml`).
+- [ ] Confirm dataset usage licence/provenance investigation owner and whether the raw dataset may be stored in the repository or redistributed (Pending Phase 1).
+- [x] Confirm local runtime versions and dependency-management approach for Node.js and Python; pin/lock dependencies per service (Next.js 16.4.2, Django 5.2.18, DRF 3.18.3, SimpleJWT 5.5.1, FastAPI 0.115.14).
+- [x] Confirm which P0 features must be included in the first local release and which P1 features may follow.
+- [x] Create/update `docs/ARCHITECTURE.md`, `docs/IMPLEMENTATION_PLAN.md`, `docs/DATASET_ML_SPEC.md`, `docs/TESTING_PLAN.md`, and `docs/FOLDER_STRUCTURE.md` as planning artifacts.
+- [x] Record the unresolved decisions, chosen options, reasons, and any accepted risks in `docs/OPEN_DECISIONS.md`.
 
 ### Deliverables
 
 - Approved PRD and SRS versions.
-- Architecture decision record(s) for inference framework, auth strategy, API contracts, and environment/dependency management.
-- Approved folder structure and phase plan.
-- Open decisions list with owners and the last permissible phase for resolution.
+- Architecture decision record(s) for inference framework (FastAPI), auth strategy (SimpleJWT), API contracts (OpenAPI 3.0), and environment/dependency management.
+- Approved canonical folder structure (`docs/FOLDER_STRUCTURE.md`) and phase plan.
+- Open decisions list with owners and the last permissible phase for resolution (`docs/OPEN_DECISIONS.md`).
 
 ### Exit criteria
 
 - No unresolved architecture conflict blocks Phase 1 or Phase 2.
-- Inference framework is explicitly selected before Phase 3 implementation.
-- Dataset licence/provenance is either verified or a documented restriction is approved before the dataset/artifact is shared or redistributed.
-- Authentication decision is approved before Phase 4 authentication implementation.
+- Inference framework is explicitly selected before Phase 3 implementation (FastAPI Approved).
+- Dataset licence/provenance is either verified or a documented restriction is approved before the dataset/artifact is shared or redistributed (Pending Phase 1).
+- Authentication decision is approved before Phase 4 authentication implementation (DRF + SimpleJWT Design Approved).
 - Product owner approves Phase 0 deliverables.
 
 ### Requirements mapping
@@ -572,20 +572,22 @@ A phase report must not use phrases such as “fully working” or “all tests 
 - Scope expansion during a phase requires explicit approval and an updated plan. Do not silently pull future-phase work into the current phase.
 - Maintain traceability: `PRD outcome -> SRS requirement ID -> phase/task -> test -> evidence -> approval`.
 
-## 17. Current Open Decisions
+## 17. Approved Architecture Decisions & Remaining Open Issues
 
-These decisions are not silently treated as complete:
+### 17.1 Approved Architecture Decisions (Phase 0)
+1. **Inference Framework:** **FastAPI** is approved for `inference-service/`.
+2. **Authentication Design:** **DRF + SimpleJWT** approved (in-memory access JWT + HttpOnly refresh cookie, rotation/revocation, backend authoritative permissions; implementation in Phase 4).
+3. **Database Strategy:** **SQLite** approved for local development; **PostgreSQL** approved and strictly required for production deployment (enforced via `config.settings.production` with no fallback to SQLite).
+4. **Runtime Versions:** Pinned and verified: Next.js 16.4.2 (Active LTS), React 19.0.0, Django 5.2.18 LTS, DRF 3.18.3, SimpleJWT 5.5.1, FastAPI 0.115.14, Python 3.13.
 
-1. Approve FastAPI (recommended) or choose another framework for the independent inference service.
-2. Verify original dataset licence, provenance, attribution, and redistribution permissions.
-3. Approve duplicate-record policy after investigating why repeated rows occur when `Index` is excluded.
-4. Finalize price parsing and treatment of `Call for Price` and suspicious values.
-5. Finalize Carpet Area/Super Area unit conversion and the normalized area-basis policy.
-6. Finalize supported location aliases and behavior for locations with limited/no training examples.
-7. Choose the authentication/session or token strategy and matching CSRF/CORS/origin configuration.
-8. Choose and pin compatible Node.js, Python, Django, inference-framework, and ML library versions.
-9. Choose production hosting, persistence, PostgreSQL configuration, and domain/origins after local acceptance.
-10. Finalize data-retention and export policy before deployment.
+### 17.2 Current Open Decisions (Pending Evidence or Relevant Phases)
+1. Verify original dataset licence, provenance, attribution, and redistribution permissions before any dataset publication.
+2. Approve duplicate-record policy after investigating why repeated rows occur when `Index` is excluded.
+3. Finalize price parsing and treatment of `Call for Price` and suspicious values.
+4. Finalize Carpet Area/Super Area unit conversion and the normalized area-basis policy.
+5. Finalize supported location aliases and behavior for locations with limited/no training examples.
+6. Choose production hosting provider and public domain after local acceptance tests.
+7. Finalize data-retention and export policy before deployment.
 
 A decision only blocks the phase that requires it, but must be resolved or explicitly accepted before that phase begins.
 

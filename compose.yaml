@@ -1,6 +1,10 @@
-# Optional Docker Compose specification for local multi-service orchestration.
-# Note: Docker is strictly OPTIONAL for initial development and scaffolding.
-# Local execution using standard Node.js and Python environments is supported directly.
+# compose.yaml — Multi-service orchestration blueprint
+#
+# STATUS: DESIGN BLUEPRINT ONLY — NOT CURRENTLY RUNNABLE
+# Note: Service Dockerfiles (frontend/Dockerfile, backend/Dockerfile, inference-service/Dockerfile)
+# are scheduled for creation in Phase 7 (Local Release) and Phase 8 (Online Deployment).
+# Docker is strictly OPTIONAL. Local development and testing are performed directly
+# using native Node.js and Python environments as documented in README.md.
 
 services:
   backend:

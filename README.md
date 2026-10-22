@@ -29,7 +29,7 @@ Browser / Client (Desktop & Mobile)
                  ▼ [Protected HTTP API]
   ┌───────────────────────────────┐
   │ Standalone Inference Service  │  Port: 8001
-  │ (FastAPI - PROVISIONAL)       │
+  │ (FastAPI - Approved)          │
   └──────────────┬────────────────┘
                  │ Loads on startup
                  ▼
@@ -45,11 +45,13 @@ Browser / Client (Desktop & Mobile)
 
 ## 2. Directory Structure & Responsibilities
 
+See the canonical tracked tree reference in [docs/FOLDER_STRUCTURE.md](file:///e:/RealEstatePrediction/docs/FOLDER_STRUCTURE.md).
+
 | Directory | Technology | Responsibility |
 |---|---|---|
-| `frontend/` | Next.js 14, TypeScript | Responsive web UI, property input forms, prediction results display, user dashboard. |
-| `backend/` | Python, Django REST Framework | User accounts, authentication, prediction persistence, admin summaries, and orchestration. |
-| `inference-service/` | Python, FastAPI (*provisional*) | Loads versioned scikit-learn pipeline into memory and serves predictions. |
+| `frontend/` | Next.js 16 (Active LTS), TypeScript | Responsive web UI, property input forms, prediction results display, user dashboard. |
+| `backend/` | Python, Django 5.2 LTS, DRF, SimpleJWT | User accounts, authentication, prediction persistence, admin summaries, and orchestration. |
+| `inference-service/` | Python, FastAPI (Approved) | Loads versioned scikit-learn pipeline into memory and serves predictions. |
 | `ml/training/` | Python, scikit-learn, pandas | Offline dataset auditing, unit normalization, model comparison, and artifact promotion. |
 | `contracts/` | OpenAPI 3.0 YAML | Formal API specifications for frontend ↔ backend and backend ↔ inference. |
 | `docs/` | Markdown | Governing PRD, SRS, Architecture, Implementation Plan, and Testing specifications. |
@@ -102,15 +104,16 @@ npm run dev
 ---
 
 ## 5. Verification & Testing
-
 Execute the test suites for each service:
 
 ```powershell
 # Structural Verification
 powershell -ExecutionPolicy Bypass -File scripts/check_scaffold.ps1
 
-# Frontend Type Check & Build
+# Frontend Tests, Lint, Type Check & Build
 cd frontend
+npm test
+npm run lint
 npm run typecheck
 npm run build
 
@@ -126,7 +129,13 @@ cd inference-service
 
 ---
 
-## 6. What Is Not Implemented in the Scaffold (Non-Goals)
+## 6. Docker & Containerization Status
+
+`compose.yaml` is provided at the repository root as an architectural deployment blueprint. Note that Compose is **not yet runnable** in Phase 0 because individual service Dockerfiles (`frontend/Dockerfile`, `backend/Dockerfile`, `inference-service/Dockerfile`) are not yet authored. Local development strictly uses native processes via `scripts/setup_dev.ps1` and `scripts/run_local.ps1`.
+
+---
+
+## 7. What Is Not Implemented in the Scaffold (Non-Goals)
 
 - Full user registration/login and role-based permissions (Scheduled for Phase 4).
 - Production property price regression model training (Scheduled for Phase 2).

@@ -129,7 +129,7 @@ Offline ML training workflow (separate process/environment)
 - Calls inference through a documented HTTP contract; it shall not import inference-service application code at runtime.
 
 **Inference service — `inference-service/`**
-- An independently runnable/deployable Python HTTP service. **FastAPI is the proposed default; final framework selection must be recorded in `ARCHITECTURE.md` before Phase 2/3 implementation.**
+- An independently runnable/deployable Python HTTP service built with **FastAPI** (approved architecture decision).
 - Owns model artifact loading and prediction execution only. It shall not own user authentication, account records, or prediction-history storage.
 - Shall not train or retrain models in a request path.
 - Shall protect internal endpoints using private-network controls and/or service authentication appropriate to the deployment.
@@ -140,8 +140,8 @@ Offline ML training workflow (separate process/environment)
 - Publishes a reviewed artifact version; live inference shall not pick up unreviewed experimental artifacts automatically.
 
 **Database**
-- SQLite may be used during early local development.
-- PostgreSQL is the preferred production database, subject to the hosting/persistence decision.
+- SQLite is used for local development.
+- PostgreSQL is required for production deployment (enforced via `config.settings.production` with no silent fallback to SQLite).
 - The application backend owns database writes. The inference service shall not access the application database directly.
 
 ### 4.3 Independence requirements
@@ -233,8 +233,8 @@ The backend shall enforce authentication, roles, and record ownership regardless
 **FR-AUTH-006 — Administrator provisioning (P0)**  
 Public registration shall always create a normal user. Administrator access shall be granted only by a protected management operation or approved deployment/bootstrap process.
 
-**FR-AUTH-007 — Authentication mechanism decision (Pending before Phase 4)**  
-The architecture decision record shall choose the session/cookie or token approach, CSRF handling, browser credential behavior, CORS policy, refresh/expiry policy if applicable, and local/production origin configuration before authentication is implemented. Secrets shall not be placed in browser-accessible persistent storage without an explicit security review.
+**FR-AUTH-007 — Authentication design (Approved; implementation in Phase 4)**
+The authentication architecture shall use Django REST Framework with SimpleJWT. The browser pattern shall hold a short-lived access JWT in frontend memory (sent in `Authorization: Bearer <token>`) and receive a refresh token in an `HttpOnly` cookie (`Secure` in production HTTPS, with appropriate `SameSite`, `Domain`, and `Path` attributes). Refresh rotation and logout invalidation shall be enforced, alongside CSRF protection for cookie-backed refresh/logout operations. Tokens shall never be persisted in browser `localStorage` or `sessionStorage`. Authoritative permissions and ownership checks are enforced strictly by the backend. Phase 4 implementation shall explicitly implement and test the custom cookie, CSRF, refresh, and logout handlers.
 
 ### 6.3 Property input and prediction requirements
 
@@ -889,23 +889,24 @@ No requirement shall be marked complete without linked evidence or a documented,
 
 ---
 
-## 16. Decisions Required Before Implementation
+## 16. Approved Architecture Decisions & Remaining Open Issues
 
-The following issues are open. They shall be resolved in Phase 0 or the latest before the phase that depends on them starts.
+### 16.1 Approved Architecture Decisions (Phase 0)
+1. **Inference framework:** **FastAPI** is approved for `inference-service/`.
+2. **Authentication approach:** **Django REST Framework with SimpleJWT** is approved (in-memory access JWT + HttpOnly refresh cookie, rotation/revocation, backend authoritative permissions; implementation in Phase 4).
+3. **Database strategy:** **SQLite** is approved for local development; **PostgreSQL** is approved and strictly required for production deployment (enforced in `config.settings.production` with no fallback to SQLite).
+4. **Supported runtime versions:** Pinned and verified: Next.js 16.4.2 (Active LTS), React 19.0.0, Django 5.2.18 LTS, DRF 3.18.3, SimpleJWT 5.5.1, FastAPI 0.115.14, Python 3.13.
 
+### 16.2 Remaining Open Issues (Pending Evidence or Relevant Future Phases)
 1. **Dataset provenance and licence:** verify the original source, applicable licence, attribution, redistribution rights, and whether the raw CSV can be included in a repository or release package.
 2. **Duplicate policy:** reproduce the finding of 119,339 duplicate occurrences after excluding `Index`, investigate row repetition, and approve how exact/near duplicates affect training and evaluation.
 3. **Area strategy:** finalize area basis, supported units, conversion table, missing-value strategy, and how Carpet Area versus Super Area is represented in the form.
 4. **Final feature schema:** confirm which proposed fields are reliable enough for the model and exposed in the UI.
 5. **Location policy:** confirm normalization/aliases, rare categories, minimum sample policy, and unsupported-location behavior.
-6. **Inference framework:** FastAPI is recommended for `inference-service/`; product owner must approve or select an alternative before service implementation.
-7. **Authentication approach:** choose a secure cookie/session or token design and document CSRF, CORS, expiry, logout, and production domain assumptions.
-8. **Database and hosting:** SQLite for early local development is acceptable; confirm production PostgreSQL provider/hosting after local release.
-9. **Privacy/retention/export:** document record-retention, account deletion/deactivation behavior, allowed CSV fields, and privacy notice before production.
-10. **Model target/benchmark:** verify `Amount(in rupees)` semantics and reassess the proposed baseline-improvement target after a valid baseline run.
-11. **Supported runtime versions:** select and pin compatible Node.js, Python, Django, scikit-learn, and inference-framework versions at project setup.
+6. **Privacy/retention/export:** document record-retention, account deletion/deactivation behavior, allowed CSV fields, and privacy notice before production.
+7. **Model target/benchmark:** verify `Amount(in rupees)` semantics and reassess the proposed baseline-improvement target after a valid baseline run.
 
-These are not reasons to guess silently. Each shall have a recorded decision, owner, and date before the dependent development work starts.
+These are not reasons to guess silently. Each open item shall have a recorded decision, owner, and date before the dependent development work starts.
 
 ---
 
