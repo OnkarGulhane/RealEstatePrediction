@@ -49,8 +49,8 @@ All phases start as `NOT STARTED`. Status must be updated only from verified wor
 
 | Phase | Focus | Status | Approval required |
 |---|---|---|---|
-| 0 | Requirements, architecture, and open decisions | NOT STARTED | Yes |
-| 1 | Dataset audit and preparation rules | NOT STARTED | Yes |
+| 0 | Requirements, architecture, and open decisions | APPROVED | Yes |
+| 1 | Dataset audit and preparation rules | READY FOR REVIEW | Yes |
 | 2 | Offline ML training and evaluation | NOT STARTED | Yes |
 | 3 | Independent inference service | NOT STARTED | Yes |
 | 4 | Django application backend | NOT STARTED | Yes |
@@ -135,17 +135,15 @@ Understand and validate the supplied dataset and approve the data-cleaning, feat
 
 ### Tasks
 
-- [ ] Locate and record the exact original dataset source, downloaded version/date, citation/attribution, licence, and redistribution terms.
-- [ ] Produce a reproducible raw-data audit: file hashes, shape, column names/types, null counts, distinct values, location distribution, price distributions, and area-unit frequencies.
-- [ ] Recompute the suspected duplicate issue using clearly defined keys. Investigate repeated records after excluding `Index`; distinguish exact duplicate rows from legitimate repeated listings. Document counts before/after each rule. Do not delete a large number of rows blindly.
-- [ ] Define a deterministic parser for `Amount(in rupees)` including `Lac`, `Cr`, numeric values, invalid text, and `Call for Price`. Keep parse failures in an audit report.
-- [ ] Inspect `Price (in rupees)` and other price-like fields for target leakage. Exclude any feature that encodes or reveals the target unless its legitimate availability at prediction time is established and approved.
-- [ ] Audit `Carpet Area`, `Super Area`, `Plot Area`, and `Dimensions`. Confirm unit conventions per record; convert only verified units to a normalized feature. Keep area basis identifiable; do not assume carpet area and super area are interchangeable.
-- [ ] Parse structured property features such as BHK, bathrooms, balcony, floor, furnishing, transaction type, ownership, facing, and location only when the source semantics are clear.
-- [ ] Review missingness, invalid values, rare categories, suspicious high/low prices, and location aliases. Distinguish likely data-entry/unit errors from legitimate expensive/large properties.
-- [ ] Create a data dictionary and a proposed supported-location policy. Unsupported locations must not yield fabricated results.
-- [ ] Define train/validation/test splitting and duplicate/group leakage controls before any model comparison. If repeated properties/listings can be grouped reliably, assess group-aware splitting.
-- [ ] Save a reproducible audit report and sample non-sensitive summaries. Keep raw data out of public Git until licence status permits it.
+- [x] Locate and record the exact original dataset source, downloaded version/date, citation/attribution, licence, and redistribution terms (Juhi Bhojani Kaggle lead; status UNVERIFIED / RESTRICTED FROM REDISTRIBUTION).
+- [x] Produce a reproducible raw-data audit: file hashes, shape, column names/types, null counts, distinct values, location distribution, price distributions, and area-unit frequencies (`ml/training/src/real_estate_ml_training/audit.py`, `validate_data.py`).
+- [x] Recompute the duplicate issue using clearly defined keys. Investigate repeated records after excluding `Index` (119,339 duplicates, 68,192 unique configurations). Phase 2 deduplicated training view policy approved; no rows deleted in Phase 1 output.
+- [x] Define a deterministic parser for `Amount(in rupees)` including `Lac`, `Cr`, numeric values, invalid text, and `Call for Price` (177,847 valid supervised rows; 9,684 Call for Price; 0 unparseable; 100% reconciliation).
+- [x] Inspect `Price (in rupees)` and other price-like fields for target leakage. Exclude `Price (in rupees)` and `Description` from prospective predictors.
+- [x] Audit `Carpet Area`, `Super Area`, `Plot Area`, and `Dimensions`. Confirm unit conventions per record; convert only verified units (sqft, sqyrd, sqm). Strict separation: Carpet only (106,858), Super only (79,846), Both (0), Neither (827), Regional (30 preserved).
+- [x] Review missingness, blank columns (`Dimensions` and `Plot Area` 100% blank; dropped), status near-constancy (99.67% Ready to Move), and extreme prices.
+- [x] Save a reproducible audit report (`docs/PHASE1_DATASET_AUDIT_REPORT.md`) and sample non-sensitive summaries. Keep raw and prepared data local and excluded from Git.
+- [ ] Implement Phase 2 deduplicated training view, feature encoding, location standardization, and validation splits (Deferred to Phase 2).
 
 ### Deliverables
 
