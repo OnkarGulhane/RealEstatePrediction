@@ -1,0 +1,45 @@
+# Optional Docker Compose specification for local multi-service orchestration.
+# Note: Docker is strictly OPTIONAL for initial development and scaffolding.
+# Local execution using standard Node.js and Python environments is supported directly.
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      - DEBUG=True
+      - DJANGO_SETTINGS_MODULE=config.settings.development
+      - INFERENCE_SERVICE_URL=http://inference:8001
+    volumes:
+      - ./backend:/app
+    depends_on:
+      - inference
+
+  inference:
+    build:
+      context: ./inference-service
+      dockerfile: Dockerfile
+    ports:
+      - "8001:8001"
+    environment:
+      - ENVIRONMENT=development
+      - MODEL_ARTIFACT_PATH=/app/artifacts/model_pipeline.joblib
+    volumes:
+      - ./inference-service:/app
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_API_BASE_URL=http://localhost:8000/api/v1
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    depends_on:
+      - backend

@@ -1,0 +1,33 @@
+# Offline ML Training Configuration Example (Scaffold State)
+# Final feature schemas, hyperparameter grids, and split policies are subject to Phase 1 data audit approval.
+
+dataset:
+  raw_path: "data/raw/house_prices.csv"
+  target_column: "Amount(in rupees)"
+  target_units: "INR"
+  test_size: 0.20
+  random_seed: 42
+
+features:
+  # Candidate features subject to Phase 1 audit verification
+  categorical:
+    - location
+    - furnishing
+    - transaction_type
+  numeric:
+    - area_value
+    - bhk
+    - bathrooms
+    - balcony
+  # Excluded columns to strictly prevent target leakage
+  excluded:
+    - Index
+    - Description
+    - "Price (in rupees)"
+
+models:
+  baseline: "DummyRegressor"
+  candidates:
+    - "Ridge"
+    - "RandomForestRegressor"
+    - "HistGradientBoostingRegressor"

@@ -1,0 +1,112 @@
+openapi: 3.0.3
+info:
+  title: Real Estate Price Prediction Platform — Inference Service API
+  version: 1.0.0-scaffold
+  description: >
+    Internal inference API exposed by the standalone Python service (FastAPI) to Django REST Framework.
+    Inference is strictly decoupled from user accounts and persistent application data.
+servers:
+  - url: http://localhost:8001
+    description: Local development inference service
+
+paths:
+  /health/live:
+    get:
+      summary: Service Liveness Check
+      description: Returns liveness status of the inference HTTP process.
+      operationId: getLiveness
+      responses:
+        '200':
+          description: Process is running.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: alive
+                  service:
+                    type: string
+                    example: inference-service
+
+  /health/ready:
+    get:
+      summary: Service & Artifact Readiness Check
+      description: >
+        Truthfully checks if the approved model pipeline artifact exists, is verified,
+        and is loaded in memory for inference. If no model is loaded, returns 503.
+      operationId: getReadiness
+      responses:
+        '200':
+          description: Model artifact is loaded and ready for predictions.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: ready
+                  model_version:
+                    type: string
+                    example: v1.0.0
+        '503':
+          description: Model artifact is not ready or missing.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: not_ready
+                  reason:
+                    type: string
+                    example: Model artifact not loaded or missing
+
+  /api/v1/predict:
+    post:
+      summary: Predict Residential Listing Price
+      description: >
+        Evaluates input property features using the loaded pipeline artifact.
+        If no model is ready, returns 503 Service Unavailable. Never returns a fabricated price.
+      operationId: predictPrice
+      responses:
+        '200':
+          description: Price estimate generated successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  estimated_price_inr:
+                    type: number
+                    example: 4500000.0
+                  currency:
+                    type: string
+                    example: INR
+                  model_version:
+                    type: string
+                    example: v1.0.0
+        '503':
+          description: Inference service unavailable or model not ready.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: Model artifact not ready
+
+  /api/v1/model/metadata:
+    get:
+      summary: Model Metadata
+      description: Returns version, training metrics, and feature schema of the currently loaded model.
+      operationId: getModelMetadata
+      responses:
+        '200':
+          description: Model metadata summary.
+        '503':
+          description: No model artifact currently loaded.

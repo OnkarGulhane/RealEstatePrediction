@@ -1,0 +1,75 @@
+openapi: 3.0.3
+info:
+  title: Real Estate Price Prediction Platform — Application API
+  version: 1.0.0-scaffold
+  description: >
+    Public application API exposed by Django REST Framework to the Next.js frontend.
+    This document defines the minimal scaffold routes and marks product-level endpoints as planned.
+servers:
+  - url: http://localhost:8000/api/v1
+    description: Local development backend
+
+paths:
+  /health/:
+    get:
+      summary: Service Health Check
+      description: Returns service liveness and scaffold status. Does not indicate ML model readiness.
+      operationId: getServiceHealth
+      responses:
+        '200':
+          description: Service is reachable and running.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: ok
+                  service:
+                    type: string
+                    example: real-estate-backend
+                  version:
+                    type: string
+                    example: 1.0.0-scaffold
+
+  # -------------------------------------------------------------
+  # Planned Endpoints (Pending Implementation in Phases 4 & 5)
+  # -------------------------------------------------------------
+  /auth/register/:
+    post:
+      summary: "[PLANNED - Phase 4] User Registration"
+      description: Register a new normal user account.
+      responses:
+        '501':
+          description: Planned feature not yet implemented in scaffold.
+
+  /auth/login/:
+    post:
+      summary: "[PLANNED - Phase 4] User Authentication"
+      description: Authenticate user credentials and establish session/token.
+      responses:
+        '501':
+          description: Planned feature not yet implemented in scaffold.
+
+  /predictions/:
+    post:
+      summary: "[PLANNED - Phase 4] Submit Property Prediction Request"
+      description: Validates property details, requests prediction from inference service, and stores successful records.
+      responses:
+        '501':
+          description: Planned feature not yet implemented in scaffold.
+    get:
+      summary: "[PLANNED - Phase 4] User Prediction History"
+      description: Paginated prediction history belonging exclusively to the authenticated user.
+      responses:
+        '501':
+          description: Planned feature not yet implemented in scaffold.
+
+  /admin/summary/:
+    get:
+      summary: "[PLANNED - Phase 4] Admin Dashboard Summary"
+      description: Administrator summary statistics computed from real database records.
+      responses:
+        '501':
+          description: Planned feature not yet implemented in scaffold.
