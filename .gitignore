@@ -23,6 +23,7 @@ venv.bak/
 
 # Testing & Linting
 .pytest_cache/
+.pytest_tmp/
 .coverage
 coverage/
 htmlcov/
