@@ -55,6 +55,7 @@ export default function Navbar() {
           }}
         >
           <div
+            className="nav-brand-logo"
             style={{
               width: '38px',
               height: '38px',
@@ -93,14 +94,10 @@ export default function Navbar() {
             <Link
               key={link.href}
               href={link.href}
+              className="nav-link-item"
               style={{
-                fontFamily: 'var(--font-ui)',
-                fontSize: '0.9375rem',
                 fontWeight: isActive(link.href) ? 600 : 500,
                 color: isActive(link.href) ? 'var(--color-primary)' : 'var(--text-secondary)',
-                position: 'relative',
-                padding: '6px 0',
-                transition: 'color 0.15s ease',
               }}
             >
               {link.label}
@@ -112,7 +109,7 @@ export default function Navbar() {
                     left: 0,
                     right: 0,
                     height: '2px',
-                    backgroundColor: 'var(--color-primary)',
+                    backgroundColor: 'var(--color-gold)',
                     borderRadius: '2px',
                   }}
                 />
@@ -134,6 +131,7 @@ export default function Navbar() {
               <Link
                 href="/properties"
                 aria-label="Search properties"
+                className="btn-icon-hover"
                 style={{
                   display: 'flex',
                   alignItems: 'center',
@@ -188,6 +186,7 @@ export default function Navbar() {
               <Link
                 href="/properties"
                 aria-label="Search properties"
+                className="btn-icon-hover"
                 style={{
                   display: 'flex',
                   alignItems: 'center',

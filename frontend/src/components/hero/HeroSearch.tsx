@@ -20,18 +20,7 @@ export default function HeroSearch() {
   return (
     <form
       onSubmit={handleSearch}
-      style={{
-        display: 'flex',
-        alignItems: 'center',
-        backgroundColor: 'var(--color-surface)',
-        border: '1px solid var(--color-border)',
-        borderRadius: 'var(--radius-sm)',
-        padding: '6px 6px 6px 16px',
-        boxShadow: 'var(--shadow-card)',
-        maxWidth: '520px',
-        width: '100%',
-        marginTop: '8px',
-      }}
+      className="hero-search-box"
     >
       <Search size={18} color="var(--text-muted)" style={{ flexShrink: 0, marginRight: '12px' }} />
       <input

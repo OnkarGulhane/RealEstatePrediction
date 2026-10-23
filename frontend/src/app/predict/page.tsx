@@ -212,12 +212,9 @@ export default function PredictPage() {
         >
           {/* LEFT: Valuation Input Form */}
           <div
+            className="card-surface"
             style={{
-              backgroundColor: 'var(--color-surface)',
-              border: '1px solid var(--color-border)',
-              borderRadius: 'var(--radius-md)',
               padding: '36px 32px',
-              boxShadow: 'var(--shadow-sm)',
             }}
           >
             {!user && (
@@ -533,6 +530,7 @@ export default function PredictPage() {
 
           {/* RIGHT: CONTRAST ESTIMATED VALUE PANEL (Deep Forest Green #0A261F) */}
           <div
+            className="predict-result-panel"
             style={{
               backgroundColor: 'var(--color-primary-dark)',
               borderRadius: 'var(--radius-md)',

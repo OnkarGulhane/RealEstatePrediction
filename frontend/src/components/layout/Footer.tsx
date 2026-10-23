@@ -85,28 +85,33 @@ export default function Footer() {
             </h4>
             <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '12px', padding: 0, margin: 0 }}>
               <li>
-                <Link href="/properties" style={{ fontSize: '0.9375rem', color: '#D4DDD8', textDecoration: 'none' }}>
+                <Link href="/properties" className="footer-link-item" style={{ fontSize: '0.9375rem', color: '#D4DDD8', textDecoration: 'none' }}>
                   Property Catalogue
                 </Link>
               </li>
               <li>
-                <Link href="/predict" style={{ fontSize: '0.9375rem', color: '#D4DDD8', textDecoration: 'none' }}>
+                <Link href="/predict" className="footer-link-item" style={{ fontSize: '0.9375rem', color: '#D4DDD8', textDecoration: 'none' }}>
                   Price Prediction
                 </Link>
               </li>
               <li>
-                <Link href="/about" style={{ fontSize: '0.9375rem', color: '#D4DDD8', textDecoration: 'none' }}>
+                <Link href="/about" className="footer-link-item" style={{ fontSize: '0.9375rem', color: '#D4DDD8', textDecoration: 'none' }}>
                   Methodology & Limitations
                 </Link>
               </li>
               <li>
-                <Link href="/dashboard" style={{ fontSize: '0.9375rem', color: '#D4DDD8', textDecoration: 'none' }}>
+                <Link href="/dashboard" className="footer-link-item" style={{ fontSize: '0.9375rem', color: '#D4DDD8', textDecoration: 'none' }}>
                   User Dashboard
                 </Link>
               </li>
               <li>
-                <Link href="/login" style={{ fontSize: '0.9375rem', color: '#D4DDD8', textDecoration: 'none' }}>
+                <Link href="/login" className="footer-link-item" style={{ fontSize: '0.9375rem', color: '#D4DDD8', textDecoration: 'none' }}>
                   Login / Account
+                </Link>
+              </li>
+              <li>
+                <Link href="/#faq" className="footer-link-item" style={{ fontSize: '0.9375rem', color: '#D4DDD8', textDecoration: 'none' }}>
+                  FAQ &amp; Feedback
                 </Link>
               </li>
             </ul>

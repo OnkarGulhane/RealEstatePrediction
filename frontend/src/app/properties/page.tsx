@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import {
@@ -10,6 +10,8 @@ import {
   LayoutGrid,
   List,
   RotateCcw,
+  Search,
+  X,
 } from 'lucide-react';
 
 interface PropertyItem {
@@ -105,8 +107,26 @@ export default function PropertiesPage() {
   const [selectedType, setSelectedType] = useState('');
   const [selectedBudget, setSelectedBudget] = useState('');
   const [selectedBeds, setSelectedBeds] = useState('');
+  const [searchTerm, setSearchTerm] = useState('');
   const [favorites, setFavorites] = useState<Record<string, boolean>>({});
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const params = new URLSearchParams(window.location.search);
+    const qSearch = params.get('search');
+    const qCity = params.get('city');
+
+    if (qSearch) {
+      setSearchTerm(qSearch);
+      const cityMatch = ['Bangalore', 'Mumbai', 'Pune', 'Hyderabad', 'Gurgaon', 'Chennai'].find(
+        (c) => c.toLowerCase() === qSearch.toLowerCase()
+      );
+      if (cityMatch) setSelectedCity(cityMatch);
+    } else if (qCity) {
+      setSelectedCity(qCity);
+    }
+  }, []);
 
   const toggleFavorite = (id: string, e: React.MouseEvent) => {
     e.preventDefault();
@@ -119,10 +139,19 @@ export default function PropertiesPage() {
     setSelectedType('');
     setSelectedBudget('');
     setSelectedBeds('');
+    setSearchTerm('');
   };
 
   const filteredProperties = useMemo(() => {
     return BENCHMARK_PROPERTIES.filter((p) => {
+      if (searchTerm) {
+        const term = searchTerm.toLowerCase();
+        const matchesSearch =
+          p.city.toLowerCase().includes(term) ||
+          p.neighborhood.toLowerCase().includes(term) ||
+          p.type.toLowerCase().includes(term);
+        if (!matchesSearch) return false;
+      }
       if (selectedCity && p.city.toLowerCase() !== selectedCity.toLowerCase()) {
         return false;
       }
@@ -140,7 +169,7 @@ export default function PropertiesPage() {
       }
       return true;
     });
-  }, [selectedCity, selectedType, selectedBudget, selectedBeds]);
+  }, [selectedCity, selectedType, selectedBudget, selectedBeds, searchTerm]);
 
   return (
     <div style={{ backgroundColor: 'var(--color-ivory)', minHeight: 'calc(100vh - var(--header-height))', paddingBottom: '80px' }}>
@@ -246,15 +275,13 @@ export default function PropertiesPage() {
               <select
                 value={selectedCity}
                 onChange={(e) => setSelectedCity(e.target.value)}
+                className="form-select"
                 style={{
                   width: '100%',
                   height: '42px',
                   borderRadius: 'var(--radius-xs)',
-                  border: '1px solid var(--color-border)',
-                  backgroundColor: 'var(--color-surface)',
                   padding: '0 32px 0 12px',
                   fontSize: '0.875rem',
-                  color: 'var(--color-dark)',
                   appearance: 'none',
                   cursor: 'pointer',
                   fontWeight: 500,
@@ -281,15 +308,13 @@ export default function PropertiesPage() {
               <select
                 value={selectedType}
                 onChange={(e) => setSelectedType(e.target.value)}
+                className="form-select"
                 style={{
                   width: '100%',
                   height: '42px',
                   borderRadius: 'var(--radius-xs)',
-                  border: '1px solid var(--color-border)',
-                  backgroundColor: 'var(--color-surface)',
                   padding: '0 32px 0 12px',
                   fontSize: '0.875rem',
-                  color: 'var(--color-dark)',
                   appearance: 'none',
                   cursor: 'pointer',
                   fontWeight: 500,
@@ -312,15 +337,13 @@ export default function PropertiesPage() {
               <select
                 value={selectedBudget}
                 onChange={(e) => setSelectedBudget(e.target.value)}
+                className="form-select"
                 style={{
                   width: '100%',
                   height: '42px',
                   borderRadius: 'var(--radius-xs)',
-                  border: '1px solid var(--color-border)',
-                  backgroundColor: 'var(--color-surface)',
                   padding: '0 32px 0 12px',
                   fontSize: '0.875rem',
-                  color: 'var(--color-dark)',
                   appearance: 'none',
                   cursor: 'pointer',
                   fontWeight: 500,
@@ -345,15 +368,13 @@ export default function PropertiesPage() {
               <select
                 value={selectedBeds}
                 onChange={(e) => setSelectedBeds(e.target.value)}
+                className="form-select"
                 style={{
                   width: '100%',
                   height: '42px',
                   borderRadius: 'var(--radius-xs)',
-                  border: '1px solid var(--color-border)',
-                  backgroundColor: 'var(--color-surface)',
                   padding: '0 32px 0 12px',
                   fontSize: '0.875rem',
-                  color: 'var(--color-dark)',
                   appearance: 'none',
                   cursor: 'pointer',
                   fontWeight: 500,
@@ -371,6 +392,7 @@ export default function PropertiesPage() {
           {/* Search / Reset Buttons */}
           <div style={{ display: 'flex', alignItems: 'flex-end', gap: '8px' }}>
             <button
+              type="button"
               onClick={resetFilters}
               className="btn-secondary"
               style={{ height: '42px', padding: '0 14px', borderRadius: 'var(--radius-xs)' }}
@@ -379,6 +401,11 @@ export default function PropertiesPage() {
               <RotateCcw size={15} />
             </button>
             <button
+              type="button"
+              onClick={() => {
+                const el = document.getElementById('catalogue-results');
+                if (el) el.scrollIntoView({ behavior: 'smooth' });
+              }}
               className="btn-primary"
               style={{
                 height: '42px',
@@ -395,6 +422,7 @@ export default function PropertiesPage() {
 
         {/* RESULTS HEADER & SORTING */}
         <div
+          id="catalogue-results"
           style={{
             display: 'flex',
             justifyContent: 'space-between',
@@ -449,163 +477,242 @@ export default function PropertiesPage() {
           </div>
         </div>
 
-        {/* PROPERTY CARDS GRID matching Final Design Board */}
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))',
-            gap: '24px',
-          }}
-        >
-          {filteredProperties.map((prop) => (
-            <div
-              key={prop.id}
-              className="property-card"
+        {/* Active Search Term Badge */}
+        {searchTerm && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '20px' }}>
+            <span style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>Matching keyword:</span>
+            <span
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
+                padding: '4px 12px',
+                borderRadius: 'var(--radius-pill)',
+                backgroundColor: 'rgba(15, 61, 54, 0.08)',
+                color: 'var(--color-primary)',
+                fontSize: '0.8125rem',
+                fontWeight: 600,
+                border: '1px solid rgba(15, 61, 54, 0.2)',
+              }}
             >
-              {/* Card Photo with Status Badge & Favorite Heart */}
-              <div
+              <span>&ldquo;{searchTerm}&rdquo;</span>
+              <button
+                onClick={() => setSearchTerm('')}
                 style={{
-                  position: 'relative',
-                  width: '100%',
-                  aspectRatio: '149 / 74',
-                  backgroundColor: 'var(--color-surface-subtle)',
+                  background: 'none',
+                  border: 'none',
+                  cursor: 'pointer',
+                  color: 'var(--color-primary)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  padding: 0,
                 }}
+                aria-label="Clear Search Keyword"
               >
-                <Image
-                  src={prop.image}
-                  alt={`${prop.city} ${prop.type}`}
-                  fill
-                  sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                  style={{ objectFit: 'cover' }}
-                />
+                <X size={14} />
+              </button>
+            </span>
+          </div>
+        )}
 
-                {/* Status Badge */}
+        {/* Empty State or Property Cards Grid */}
+        {filteredProperties.length === 0 ? (
+          <div
+            className="card-surface"
+            style={{
+              padding: '64px 32px',
+              textAlign: 'center',
+              maxWidth: '540px',
+              margin: '32px auto 0',
+            }}
+          >
+            <div
+              style={{
+                width: '56px',
+                height: '56px',
+                borderRadius: '50%',
+                backgroundColor: 'rgba(15, 61, 54, 0.08)',
+                color: 'var(--color-primary)',
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                marginBottom: '16px',
+              }}
+            >
+              <Search size={24} />
+            </div>
+            <h3 className="font-display" style={{ fontSize: '1.25rem', fontWeight: 600, color: 'var(--color-dark)', marginBottom: '8px' }}>
+              No Properties Found
+            </h3>
+            <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', marginBottom: '24px', lineHeight: 1.6 }}>
+              No properties matched your current filter criteria. Try resetting or adjusting your search parameters.
+            </p>
+            <button
+              onClick={resetFilters}
+              className="btn-primary"
+              style={{ height: '42px', padding: '0 24px', fontSize: '0.875rem' }}
+            >
+              Reset Filters
+            </button>
+          </div>
+        ) : (
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))',
+              gap: '24px',
+            }}
+          >
+            {filteredProperties.map((prop) => (
+              <div
+                key={prop.id}
+                className="property-card"
+              >
+                {/* Card Photo with Status Badge & Favorite Heart */}
                 <div
                   style={{
-                    position: 'absolute',
-                    top: '12px',
-                    left: '12px',
-                    padding: '4px 10px',
-                    backgroundColor: 'rgba(15, 61, 54, 0.88)',
-                    backdropFilter: 'blur(4px)',
-                    borderRadius: 'var(--radius-xs)',
-                    color: '#FFFFFF',
-                    fontSize: '0.6875rem',
-                    fontWeight: 600,
-                    letterSpacing: '0.04em',
-                    textTransform: 'uppercase',
-                    boxShadow: '0 2px 6px rgba(0, 0, 0, 0.2)',
+                    position: 'relative',
+                    width: '100%',
+                    aspectRatio: '149 / 74',
+                    backgroundColor: 'var(--color-surface-subtle)',
                   }}
                 >
-                  {prop.statusBadge}
-                </div>
+                  <Image
+                    src={prop.image}
+                    alt={`${prop.city} ${prop.type}`}
+                    fill
+                    sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                    style={{ objectFit: 'cover' }}
+                  />
 
-                {/* Heart Button */}
-                <button
-                  onClick={(e) => toggleFavorite(prop.id, e)}
-                  aria-label={`Save ${prop.city} property to favorites`}
-                  style={{
-                    position: 'absolute',
-                    top: '12px',
-                    right: '12px',
-                    width: '32px',
-                    height: '32px',
-                    borderRadius: '50%',
-                    backgroundColor: 'rgba(255, 255, 255, 0.9)',
-                    border: 'none',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    cursor: 'pointer',
-                    boxShadow: '0 2px 6px rgba(0, 0, 0, 0.15)',
-                    color: favorites[prop.id] ? 'var(--color-error)' : 'var(--color-dark)',
-                    transition: 'all 0.15s ease',
-                  }}
-                >
-                  <Heart size={16} fill={favorites[prop.id] ? 'var(--color-error)' : 'none'} />
-                </button>
-              </div>
-
-              {/* Card Content matching exact board layout */}
-              <div style={{ padding: '20px 22px', display: 'flex', flexDirection: 'column', flex: 1 }}>
-                {/* City Heading */}
-                <h3
-                  className="font-display"
-                  style={{
-                    fontSize: '1.25rem',
-                    fontWeight: 600,
-                    color: 'var(--color-dark)',
-                    margin: '0 0 6px 0',
-                  }}
-                >
-                  {prop.neighborhood.split(',')[0]}
-                </h3>
-
-                {/* Specs Line: 2 BHK | 1,150 sq.ft. | Apartment */}
-                <div
-                  style={{
-                    fontSize: '0.8125rem',
-                    color: 'var(--text-secondary)',
-                    fontWeight: 500,
-                    marginBottom: '16px',
-                  }}
-                >
-                  {prop.beds} BHK &nbsp;|&nbsp; {prop.areaSqFt.toLocaleString('en-IN')} sq.ft. &nbsp;|&nbsp; {prop.type}
-                </div>
-
-                {/* Price & Location Row */}
-                <div
-                  style={{
-                    marginTop: 'auto',
-                    paddingTop: '16px',
-                    borderTop: '1px solid var(--color-border-subtle)',
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'flex-end',
-                  }}
-                >
-                  <div>
-                    <div
-                      style={{
-                        fontSize: '1.25rem',
-                        fontWeight: 700,
-                        color: 'var(--color-primary)',
-                        marginBottom: '4px',
-                      }}
-                    >
-                      {prop.priceDisplay}
-                    </div>
-                    <div style={{ fontSize: '0.8125rem', color: 'var(--text-muted)' }}>
-                      {prop.neighborhood}
-                    </div>
+                  {/* Status Badge */}
+                  <div
+                    style={{
+                      position: 'absolute',
+                      top: '12px',
+                      left: '12px',
+                      padding: '4px 10px',
+                      backgroundColor: 'rgba(15, 61, 54, 0.88)',
+                      backdropFilter: 'blur(4px)',
+                      borderRadius: 'var(--radius-xs)',
+                      color: '#FFFFFF',
+                      fontSize: '0.6875rem',
+                      fontWeight: 600,
+                      letterSpacing: '0.04em',
+                      textTransform: 'uppercase',
+                      boxShadow: '0 2px 6px rgba(0, 0, 0, 0.2)',
+                    }}
+                  >
+                    {prop.statusBadge}
                   </div>
 
-                  {/* Direct Link to ML Valuation Tool */}
-                  <Link
-                    href={`/predict?location=${encodeURIComponent(prop.city)}&bhk=${prop.beds}&area=${prop.areaSqFt}&type=${encodeURIComponent(prop.type)}`}
-                    className="btn-secondary"
+                  {/* Heart Button */}
+                  <button
+                    onClick={(e) => toggleFavorite(prop.id, e)}
+                    aria-label={`Save ${prop.city} property to favorites`}
                     style={{
-                      height: '36px',
-                      padding: '0 14px',
-                      borderRadius: 'var(--radius-xs)',
-                      fontSize: '0.8125rem',
-                      fontWeight: 600,
-                      gap: '6px',
-                      color: 'var(--color-primary)',
-                      borderColor: 'rgba(15, 61, 54, 0.25)',
-                      textDecoration: 'none',
-                      flexShrink: 0,
+                      position: 'absolute',
+                      top: '12px',
+                      right: '12px',
+                      width: '32px',
+                      height: '32px',
+                      borderRadius: '50%',
+                      backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                      border: 'none',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      cursor: 'pointer',
+                      boxShadow: '0 2px 6px rgba(0, 0, 0, 0.15)',
+                      color: favorites[prop.id] ? 'var(--color-error)' : 'var(--color-dark)',
+                      transition: 'all 0.15s ease',
                     }}
-                    title={`Estimate ${prop.neighborhood} with GharScope ML Model`}
                   >
-                    <span>Value Property</span>
-                    <ArrowRight size={13} />
-                  </Link>
+                    <Heart size={16} fill={favorites[prop.id] ? 'var(--color-error)' : 'none'} />
+                  </button>
+                </div>
+
+                {/* Card Content matching exact board layout */}
+                <div style={{ padding: '20px 22px', display: 'flex', flexDirection: 'column', flex: 1 }}>
+                  {/* City Heading */}
+                  <h3
+                    className="font-display"
+                    style={{
+                      fontSize: '1.25rem',
+                      fontWeight: 600,
+                      color: 'var(--color-dark)',
+                      margin: '0 0 6px 0',
+                    }}
+                  >
+                    {prop.neighborhood.split(',')[0]}
+                  </h3>
+
+                  {/* Specs Line: 2 BHK | 1,150 sq.ft. | Apartment */}
+                  <div
+                    style={{
+                      fontSize: '0.8125rem',
+                      color: 'var(--text-secondary)',
+                      fontWeight: 500,
+                      marginBottom: '16px',
+                    }}
+                  >
+                    {prop.beds} BHK &nbsp;|&nbsp; {prop.areaSqFt.toLocaleString('en-IN')} sq.ft. &nbsp;|&nbsp; {prop.type}
+                  </div>
+
+                  {/* Price & Location Row */}
+                  <div
+                    style={{
+                      marginTop: 'auto',
+                      paddingTop: '16px',
+                      borderTop: '1px solid var(--color-border-subtle)',
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'flex-end',
+                    }}
+                  >
+                    <div>
+                      <div
+                        style={{
+                          fontSize: '1.25rem',
+                          fontWeight: 700,
+                          color: 'var(--color-primary)',
+                          marginBottom: '4px',
+                        }}
+                      >
+                        {prop.priceDisplay}
+                      </div>
+                      <div style={{ fontSize: '0.8125rem', color: 'var(--text-muted)' }}>
+                        {prop.neighborhood}
+                      </div>
+                    </div>
+
+                    {/* Direct Link to ML Valuation Tool */}
+                    <Link
+                      href={`/predict?location=${encodeURIComponent(prop.city)}&bhk=${prop.beds}&area=${prop.areaSqFt}&type=${encodeURIComponent(prop.type)}`}
+                      className="btn-secondary"
+                      style={{
+                        height: '36px',
+                        padding: '0 14px',
+                        borderRadius: 'var(--radius-xs)',
+                        fontSize: '0.8125rem',
+                        fontWeight: 600,
+                        gap: '6px',
+                        color: 'var(--color-primary)',
+                        borderColor: 'rgba(15, 61, 54, 0.25)',
+                        textDecoration: 'none',
+                        flexShrink: 0,
+                      }}
+                      title={`Estimate ${prop.neighborhood} with GharScope ML Model`}
+                    >
+                      <span>Value Property</span>
+                      <ArrowRight size={13} />
+                    </Link>
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
