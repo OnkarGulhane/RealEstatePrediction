@@ -1,0 +1,14 @@
+.venv
+__pycache__
+*.py[cod]
+*$py.class
+*.sqlite3
+.pytest_cache
+.pytest_tmp
+.coverage
+htmlcov
+*.log
+.git
+.gitignore
+.env
+tests

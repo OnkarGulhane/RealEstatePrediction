@@ -3,21 +3,21 @@
 > **Product:** Real Estate Price Prediction Platform — India  
 > **Repository:** `OnkarGulhane/RealEstatePrediction`  
 > **Architecture:** Monorepo with decoupled services (Next.js Frontend, Django REST Application Backend, FastAPI Inference Microservice, Offline ML Pipeline)  
-> **Last Updated:** 23 October 2026 (02:45 AM IST)  
-> **Published Commit:** [`2b14176`](https://github.com/OnkarGulhane/RealEstatePrediction/commit/2b141766429e041b1b8d1eefbb5562f878dfffa1) on branch `main` (`origin/main`)  
-> **Current Status:** Phases 0–6 **APPROVED & VERIFIED** | Phase 7 (Reproducible Local Release & Runbook) **NEXT IN LINE**
+> **Last Updated:** 24 October 2026 (12:20 PM IST)  
+> **Published Commit:** [`bdc3f7b`](https://github.com/OnkarGulhane/RealEstatePrediction/commit/bdc3f7b) on branch `main` (`origin/main`)  
+> **Current Status:** Phases 0–7 **APPROVED & VERIFIED** | Phase 8 (Online Production Deployment) **NEXT IN LINE**
 
 ---
 
 ## 1. System Topology & Monorepo Architecture
 
-```
+```text
                         REAL ESTATE PREDICTION ARCHITECTURE
 ┌────────────────────────────────────────────────────────────────────────────────────────┐
 │                               FRONTEND LAYER (Phase 5 - Next.js)                       │
-│  - Next.js 16.x App Router (SSG/SSR)             - TypeScript 5.x                      │
-│  - Tailwind CSS / Vanilla CSS Design System      - Interactive Valuation Calculator     │
-│  - User Auth & JWT Token Refresh Flow             - Historical Predictions Explorer    │
+│  - Next.js 16.4.2 App Router (SSG/SSR)           - TypeScript 5.7                      │
+│  - Ivory Luxury Design System (Forest Green/Gold)- Interactive Valuation Calculator     │
+│  - User Auth & JWT Token Refresh Flow            - Historical Predictions Explorer     │
 │  - Admin Analytics & Model Metadata Visualizer   - Responsive Mobile/Desktop Design    │
 └─────────────────────────────────────────▲──────────────────────────────────────────────┘
                                           │  REST HTTP (JSON, Bearer Token, CSRF Token)
@@ -26,7 +26,7 @@
 │                       APPLICATION BACKEND (Phase 4 - Django 5.2 LTS)                   │
 │  ┌──────────────────────────────────────────────────────────────────────────────────┐  │
 │  │                              API ROUTING & APPS                                  │  │
-│  │  apps.accounts     (Register, Login, CSRF, Refresh, Logout, User Profile)        │  │
+│  │  apps.accounts     (Register, Login, CSRF, Refresh, Logout, User Profile, Seed)  │  │
 │  │  apps.properties   (Supported Locations Metadata, City Catalog)                  │  │
 │  │  apps.predictions  (Prediction Orchestrator, Inference HTTP Client, History)     │  │
 │  │  apps.analytics    (Admin Summary, User Audit, Prediction Records, Reports)      │  │
@@ -62,7 +62,7 @@
 │  - Clean Dataset: 177,847 continuous INR asking price rows, 65,255 unique configs     │
 │  - Treatment B: Raw 21-50 parking spaces preserved, missing median imputed             │
 │  - Trained Model: LightGBM Regressor (R² = 0.8870, MAE = 12.33 Lakhs INR)              │
-│  - Stored Artifacts: ml/artifacts/final_model.joblib + metadata.json                   │
+│  - Stored Artifacts: ml/training/experiments/phase2/ + inference-service/artifacts/   │
 └────────────────────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -70,8 +70,9 @@
 
 ## 2. Monorepo Directory Structure
 
-```
+```text
 RealEstatePrediction/
+├── compose.yaml                  # Multi-container orchestration (Next.js, Django, FastAPI, Postgres)
 ├── contracts/
 │   ├── application-api.yaml      # OpenAPI 3.0.3 contract for Next.js <-> Django
 │   └── inference-api.yaml        # OpenAPI 3.0.3 contract for Django <-> FastAPI
@@ -80,27 +81,42 @@ RealEstatePrediction/
 │   ├── DATASET_ML_SPEC.md        # Dataset audit, cleaning rules & Treatment B
 │   ├── IMPLEMENTATION_PLAN.md    # Master execution plan (Phases 0-8)
 │   ├── PRD.md                    # Product requirements
+│   ├── RUNBOOK.md                # Phase 7 Reproducible Local Release Runbook & FAQs
 │   ├── SRS.md                    # Detailed software requirements specification
 │   └── TESTING_PLAN.md           # Test strategy across all components
 ├── backend/                      # Django REST Application Backend (Phase 4)
+│   ├── Dockerfile                # Production-ready Python 3.11 slim container definition
+│   ├── entrypoint.sh             # Startup migration wrapper script
 │   ├── manage.py
-│   ├── requirements.txt          # Python dependencies (Django 5.2, DRF, SimpleJWT, etc.)
+│   ├── requirements.txt          # Python dependencies (Django 5.2, DRF, SimpleJWT, Gunicorn)
 │   ├── config/                   # Multi-environment Django settings (base, dev, prod)
 │   ├── apps/
-│   │   ├── accounts/             # Auth, User model, JWT rotation, CSRF token view
+│   │   ├── accounts/             # Auth, User model, JWT rotation, CSRF token view, seed command
 │   │   ├── analytics/            # Admin reports, prediction aggregates, user metrics
 │   │   ├── common/               # RFC 7807 error handler, custom exceptions
 │   │   ├── predictions/          # Prediction history, persistence, Inference Client
 │   │   └── properties/           # Public location and amenity metadata
-│   └── tests/                    # 45 backend unit, integration, and security tests
+│   └── tests/                    # 46 backend unit, integration, and security tests
 ├── inference-service/            # FastAPI Microservice (Phase 3)
+│   ├── Dockerfile                # Python 3.11 slim container definition
 │   ├── app/                      # FastAPI routes, schemas, loader, adapter
+│   ├── artifacts/                # Approved model pipeline binary & metadata JSON
 │   └── tests/                    # 43 inference service unit and contract tests
 ├── ml/                           # Offline ML Engineering (Phase 1 & 2)
-│   ├── artifacts/                # Trained LightGBM model binary & metadata JSON
 │   ├── training/                 # Pipeline scripts, audit tools, and evaluation
 │   └── tests/                    # 75 ML regression & pipeline tests
-├── frontend/                     # Next.js Application (Phase 5 - Starting Tomorrow)
+├── frontend/                     # Next.js Application (Phase 5)
+│   ├── Dockerfile                # Multi-stage standalone Node 20 container definition
+│   ├── src/                      # App router, components, hooks, api client
+│   └── tests/                    # 12 frontend unit & formatting tests
+├── scripts/                      # Cross-Platform Automation & Quality Assurance
+│   ├── run_all_tests.ps1         # Windows single-command runner for all 176+ unit/offline tests
+│   ├── run_all_tests.sh          # Unix/macOS single-command test runner
+│   ├── run_e2e_integration_test.py # Live cross-service E2E test runner (16 scenarios)
+│   ├── run_local.ps1             # Windows service launcher instructions
+│   ├── run_local.sh              # Unix/macOS service launcher
+│   ├── setup_dev.ps1             # Windows automated setup & seed data script
+│   └── setup_dev.sh              # Unix/macOS automated setup script
 ├── progress.md                   # Real-time progress tracker and daily status
 └── repomemory.md                 # Complete repository architectural memory (this file)
 ```
@@ -122,31 +138,34 @@ RealEstatePrediction/
 - **Persistence Guarantees:** Prediction records are persisted to SQLite/PostgreSQL **only** upon receiving an affirmative, valid, strictly positive INR estimate from FastAPI. If inference times out or fails, a structured RFC 7807 error is returned to the user without leaving orphaned or corrupt database records.
 
 ### 3.3 Database Architecture & Isolation
-- **Custom User Model:** `apps.accounts.models.User` (UUID primary key, case-insensitive email unique constraint, role flags for normal user vs admin).
-- **Prediction Record Model:** `apps.predictions.models.PredictionRecord` stores complete input parameters snapshot (carpet/super area, BHK, baths, parking, status), predicted price in INR, price per sqft, latency in ms, model version, and user foreign key.
+- **Custom User Model:** `apps.accounts.models.User` (Email primary key, case-insensitive unique constraint, role flags for normal user vs admin).
+- **Prediction Record Model:** `apps.predictions.models.Prediction` stores complete input parameters snapshot (carpet/super area, BHK, baths, parking, status), predicted price in INR, currency, model version, and user foreign key.
 - **Object-Level Ownership:** Non-admin users can only view or delete their own predictions (`/api/v1/predictions/history/`). Admins can query system-wide predictions with date range filters and aggregations (`/api/v1/analytics/predictions/`).
 
 ---
 
-## 4. Comprehensive Test Suite & Verification Matrix (163 Automated Tests)
+## 4. Comprehensive Test Suite & Verification Matrix (192 Automated Tests)
 
 Every component is governed by automated regression tests:
 
 | Suite | Component | Test Count | Key Invariants Verified |
 |---|---|---|---|
-| **Backend Suite** | Django 5.2 | **45 passed** | CSRF enforcement on cookies, JWT rotation/blacklisting, user registration, property metadata, prediction persistence, admin security gates, contract drift |
+| **Frontend Suite** | Next.js 16 | **12 passed** | API base URL trimming, in-memory ephemeral access token, CSRF masking, RFC 7807 error envelopes, Lakhs/Crores currency formatters |
+| **Backend Suite** | Django 5.2 | **46 passed** | CSRF enforcement on cookies, JWT rotation/blacklisting, user registration, property metadata, prediction persistence, admin security gates, demo seeding |
 | **Inference Suite** | FastAPI | **43 passed** | Liveness/readiness probes, schema version matching, Treatment B parking logic, carpet/super area conversion, invalid floor rejection, real artifact smoke tests |
 | **ML Pipeline Suite** | Scikit-Learn / LightGBM | **75 passed** | 22-feature column transformer, missing value median imputation, unknown category encoding, non-negative prediction output |
+| **Live E2E Suite** | Python Requests | **16 passed** | Live coordination across ports 3000, 8000, 8001; auth registration, valuation pipeline, privacy isolation (404), RBAC guards (403), logout blacklist |
 | **Contract Suite** | OpenAPI 3.0.3 | **2 validated** | Zero specification errors across both `application-api.yaml` and `inference-api.yaml` |
 | **Database Suite** | Django Migrations | **32 applied** | Clean zero-state database initialization without migration graph errors |
+| **Total Automated Tests** | Across Monorepo | **192 passed** | **100% Passing (0 failures, 0 regressions)** |
 
 ---
 
-## 5. Phase 5 Roadmap (Next Steps for Tomorrow)
+## 5. Phase 8 Roadmap (Online Production Deployment)
 
-Tomorrow we will initiate **Phase 5: Next.js Frontend**.
-1. **Scaffold Next.js 16 LTS:** Setup App Router, TypeScript, modern CSS framework, and clean API client gateway.
-2. **Auth Integration:** Build Login, Register, Logout, and Token Refresh with CSRF bootstrap.
-3. **Valuation Calculator UI:** Interactive property form with location select, dynamic area basis toggles, instant INR price estimation, and formatted Lakhs/Crores display.
-4. **User Dashboard & History:** Recent valuations table, deletion actions, and export preview.
-5. **Admin Operations View:** Analytics summary, system activity, and model health monitor.
+With Phase 7 complete and verified, the project is ready for **Phase 8: Online Production Deployment**:
+1. **Frontend Hosting:** Vercel deployment connected to `origin/main` with `NEXT_PUBLIC_API_BASE_URL` pointing to production API.
+2. **Backend & Inference Hosting:** Render / Railway / Fly.io container deployment with health check probes and bounded internal network communication.
+3. **Managed Production Database:** Managed PostgreSQL instance (Neon / Supabase / AWS RDS) with automated backups and connection pooling.
+4. **Security Hardening:** SSL/TLS HTTPS certificates, production CORS whitelist, secure cookie flags (`SameSite=None` or `Lax`, `Secure=True`), and production secret manager.
+5. **Production Smoke Testing:** Live verification of user signups, real valuations, and admin audit dashboards on public domain names.

@@ -1,0 +1,11 @@
+node_modules
+.next
+.git
+.gitignore
+*.log
+*.tsbuildinfo
+.env
+.env.local
+.env.*.local
+tests
+e2e

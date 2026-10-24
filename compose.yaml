@@ -1,49 +1,124 @@
-# compose.yaml — Multi-service orchestration blueprint
+# compose.yaml — Multi-service container orchestration for Real Estate Prediction Platform
 #
-# STATUS: DESIGN BLUEPRINT ONLY — NOT CURRENTLY RUNNABLE
-# Note: Service Dockerfiles (frontend/Dockerfile, backend/Dockerfile, inference-service/Dockerfile)
-# are scheduled for creation in Phase 7 (Local Release) and Phase 8 (Online Deployment).
-# Docker is strictly OPTIONAL. Local development and testing are performed directly
-# using native Node.js and Python environments as documented in README.md.
+# Usage:
+#   docker compose up --build        (Start full stack: Next.js + Django + FastAPI)
+#   docker compose down             (Stop all containers)
+#   docker compose --profile postgres up --build (Start with PostgreSQL database)
+
+name: realestate-platform
+
+networks:
+  realestate_net:
+    driver: bridge
+
+volumes:
+  backend_data:
+  postgres_data:
 
 services:
+  # 1. FastAPI Inference Microservice (Port 8001)
+  inference:
+    build:
+      context: ./inference-service
+      dockerfile: Dockerfile
+    container_name: realestate-inference
+    ports:
+      - "8001:8001"
+    environment:
+      - ENVIRONMENT=development
+      - HOST=0.0.0.0
+      - PORT=8001
+      - MODEL_ARTIFACT_PATH=artifacts/model_pipeline.joblib
+      - MODEL_METADATA_PATH=artifacts/metadata.json
+      - SERVICE_TOKEN=dev-secret-internal-token
+    volumes:
+      - ./inference-service/artifacts:/app/artifacts:ro
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8001/health/live"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+    networks:
+      - realestate_net
+    restart: unless-stopped
+
+  # 2. Django REST Application Backend (Port 8000)
   backend:
     build:
       context: ./backend
       dockerfile: Dockerfile
+    container_name: realestate-backend
     ports:
       - "8000:8000"
     environment:
       - DEBUG=True
       - DJANGO_SETTINGS_MODULE=config.settings.development
       - INFERENCE_SERVICE_URL=http://inference:8001
+      - SERVICE_TOKEN=dev-secret-internal-token
+      - SECRET_KEY=django-insecure-local-compose-demo-secret-key-phase7
+      - CORS_ALLOWED_ORIGINS=http://localhost:3000,http://127.0.0.1:3000
     volumes:
-      - ./backend:/app
+      - backend_data:/app
     depends_on:
-      - inference
+      inference:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/health/"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - realestate_net
+    restart: unless-stopped
 
-  inference:
-    build:
-      context: ./inference-service
-      dockerfile: Dockerfile
-    ports:
-      - "8001:8001"
-    environment:
-      - ENVIRONMENT=development
-      - MODEL_ARTIFACT_PATH=/app/artifacts/model_pipeline.joblib
-    volumes:
-      - ./inference-service:/app
-
+  # 3. Next.js 16 Ivory Luxury Frontend (Port 3000)
   frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+      args:
+        - NEXT_PUBLIC_API_BASE_URL=http://localhost:8000/api/v1
+    container_name: realestate-frontend
     ports:
       - "3000:3000"
     environment:
+      - NODE_ENV=production
       - NEXT_PUBLIC_API_BASE_URL=http://localhost:8000/api/v1
-    volumes:
-      - ./frontend:/app
-      - /app/node_modules
+      - PORT=3000
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3000"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    networks:
+      - realestate_net
+    restart: unless-stopped
+
+  # 4. Optional PostgreSQL Service (Activated with --profile postgres)
+  postgres:
+    image: postgres:16-alpine
+    container_name: realestate-postgres
+    profiles:
+      - postgres
+    environment:
+      - POSTGRES_DB=realestate_db
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - realestate_net
+    restart: unless-stopped
