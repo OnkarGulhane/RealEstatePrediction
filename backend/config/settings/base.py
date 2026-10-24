@@ -8,6 +8,12 @@ import sys
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
+try:
+    from dotenv import load_dotenv
+    load_dotenv(BASE_DIR / '.env')
+except ImportError:
+    pass
+
 # Add apps directory to Python path
 APPS_DIR = BASE_DIR / 'apps'
 if str(APPS_DIR) not in sys.path:
