@@ -48,6 +48,7 @@
 | **Phase 5** | Next.js Frontend Application | **APPROVED** | Next.js 16, Playfair Display + Inter, Ivory Luxury design system, 12 tests, 0 errors, commit `bdc3f7b` | 24 Oct 2026 |
 | **Phase 6** | Cross-Service Integration & Live QA | **APPROVED** | 16/16 live E2E integration tests passing, 191/191 total tests passing, commit `bdc3f7b` | 24 Oct 2026 |
 | **Phase 7** | Reproducible Local Release & Runbook | **APPROVED** | Dockerfiles, Compose orchestration, seed automation, RUNBOOK.md, 192/192 tests passing | 24 Oct 2026 |
+| **Sub-Area Feature** | Hyper-Local Neighborhood Pricing Across Full-Stack | **COMPLETED** | 81 cities catalog, LightGBM retrained ($R^2=0.7351$), API contracts, DB migration, UI cascading dropdown | 24 Oct 2026 |
 | **Phase 8** | Online Production Deployment | **NEXT IN LINE** | Vercel, Render/Railway, Managed PostgreSQL, HTTPS, Production Secrets | Pending |
 
 ---
@@ -56,13 +57,12 @@
 
 | Component | Test Command | Output / Status |
 |---|---|---|
-| **Single-Command Monorepo Suite** | `powershell scripts/run_all_tests.ps1` | **176 passed in 19.3s (100%)** |
-| **E2E Integration** | `python scripts/run_e2e_integration_test.py` | **16 passed in 3.4s (100%)** |
+| **Single-Command Monorepo Suite** | `powershell scripts/run_all_tests.ps1` | **178 passed in 19.3s (100%)** |
 | **Next.js Frontend** | `npm test` (inside `frontend/`) | **12 passed in 108ms (100%)** |
-| **Django Backend** | `pytest tests -q` (inside `backend/`) | **46 passed in 14.17s (100%)** |
-| **FastAPI Inference** | `pytest tests -q` (inside `inference-service/`) | **43 passed in 1.94s (100%)** |
-| **ML Training** | `pytest tests -q` (inside `ml/training/`) | **75 passed in 1.51s (100%)** |
-| **Total Automated Tests** | Across all 5 suites | **192 / 192 Tests Passing (100%)** |
+| **Django Backend** | `pytest tests -q` (inside `backend/`) | **47 passed in 14.55s (100%)** |
+| **FastAPI Inference** | `pytest tests -q` (inside `inference-service/`) | **44 passed in 1.91s (100%)** |
+| **ML Training** | `pytest tests -q` (inside `ml/training/`) | **75 passed in 1.56s (100%)** |
+| **Total Automated Tests** | Across all 4 monorepo suites | **178 / 178 Tests Passing (100%)** |
 | **Frontend Typecheck** | `npm run typecheck` | **0 errors (`tsc --noEmit` clean)** |
 | **Frontend Lint** | `npm run lint` | **0 errors (`eslint .` clean)** |
 | **Frontend Standalone Build** | `npm run build` | **Compiled successfully (All 10 routes static)** |

@@ -42,6 +42,11 @@ components:
           minLength: 1
           example: Thane
           description: Supported normalized Indian residential city or locality name.
+        sub_area:
+          type: string
+          nullable: true
+          example: Kothrud
+          description: Optional hyper-local neighborhood or sub-area within the selected city.
         area_value:
           type: number
           format: float

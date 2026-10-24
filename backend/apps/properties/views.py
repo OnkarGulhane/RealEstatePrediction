@@ -1,6 +1,17 @@
+import json
+from pathlib import Path
 from rest_framework import permissions
 from rest_framework.views import APIView
 from rest_framework.response import Response
+
+CITY_SUB_AREAS_PATH = Path(__file__).resolve().parent / "data" / "city_sub_areas.json"
+CITY_SUB_AREAS = {}
+if CITY_SUB_AREAS_PATH.exists():
+    try:
+        with open(CITY_SUB_AREAS_PATH, "r", encoding="utf-8") as f:
+            CITY_SUB_AREAS = json.load(f)
+    except Exception:
+        CITY_SUB_AREAS = {}
 
 SUPPORTED_LOCATIONS = [
     "Agra", "Ahmadnagar", "Ahmedabad", "Allahabad", "Aurangabad", "Badlapur", "Bangalore", "Belgaum",
@@ -30,8 +41,8 @@ CATEGORICAL_METADATA = {
 
 class LocationsMetadataView(APIView):
     """
-    Public metadata endpoint returning canonical supported Indian cities and feature levels
-    matching the trained regression model.
+    Public metadata endpoint returning canonical supported Indian cities,
+    hyper-local sub-areas, and feature levels matching the trained regression model.
     """
     permission_classes = [permissions.AllowAny]
 
@@ -43,5 +54,6 @@ class LocationsMetadataView(APIView):
                 {"name": loc, "normalized": loc.strip().lower()}
                 for loc in SUPPORTED_LOCATIONS
             ],
+            "city_sub_areas": CITY_SUB_AREAS,
             **CATEGORICAL_METADATA,
         })

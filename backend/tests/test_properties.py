@@ -48,3 +48,11 @@ class TestPropertiesMetadata:
         assert "Semi-Furnished" in cats["furnishing"]
         assert "Ready to Move" in cats["status"]
         assert "Freehold" in cats["ownership"]
+
+        # Check city_sub_areas mapping
+        assert "city_sub_areas" in data
+        assert isinstance(data["city_sub_areas"], dict)
+        assert "Pune" in data["city_sub_areas"]
+        assert "Kothrud" in data["city_sub_areas"]["Pune"]
+        assert "Mumbai" in data["city_sub_areas"]
+        assert "Andheri West" in data["city_sub_areas"]["Mumbai"]

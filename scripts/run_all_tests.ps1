@@ -30,8 +30,8 @@ Write-Host "`n[2/4] Running Backend Suite (Django REST Framework Pytest)..." -Fo
 Set-Location "$RepoRoot\backend"
 & ".\.venv\Scripts\pytest.exe" tests -q
 if ($LASTEXITCODE -eq 0) {
-    Write-Host "  -> Backend Tests: PASSED (46/46)" -ForegroundColor Green
-    $TotalPassed += 46
+    Write-Host "  -> Backend Tests: PASSED (47/47)" -ForegroundColor Green
+    $TotalPassed += 47
 } else {
     Write-Host "  -> Backend Tests: FAILED" -ForegroundColor Red
     $TotalFailed += 1
@@ -42,8 +42,8 @@ Write-Host "`n[3/4] Running Inference Service Suite (FastAPI Microservice Pytest
 Set-Location "$RepoRoot\inference-service"
 & ".\.venv\Scripts\pytest.exe" tests -q
 if ($LASTEXITCODE -eq 0) {
-    Write-Host "  -> Inference Service Tests: PASSED (43/43)" -ForegroundColor Green
-    $TotalPassed += 43
+    Write-Host "  -> Inference Service Tests: PASSED (44/44)" -ForegroundColor Green
+    $TotalPassed += 44
 } else {
     Write-Host "  -> Inference Service Tests: FAILED" -ForegroundColor Red
     $TotalFailed += 1

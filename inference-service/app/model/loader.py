@@ -19,7 +19,7 @@ except ImportError:
 
 logger = logging.getLogger("inference_service.model_loader")
 
-APPROVED_22_FEATURES = [
+APPROVED_MODEL_FEATURES = [
     "carpet_area_sqft",
     "super_area_sqft",
     "has_carpet_area",
@@ -37,15 +37,18 @@ APPROVED_22_FEATURES = [
     "floor_num",
     "total_floors",
     "location",
+    "sub_area",
     "Furnishing",
     "Transaction",
     "Status",
     "facing",
     "Ownership",
 ]
+APPROVED_22_FEATURES = APPROVED_MODEL_FEATURES
 
 CATEGORICAL_COLS = [
     "location",
+    "sub_area",
     "Furnishing",
     "Transaction",
     "Status",

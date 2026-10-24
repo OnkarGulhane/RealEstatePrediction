@@ -135,6 +135,11 @@ class RequestAdapter:
         if err:
             raise ValueError(f"INVALID_CATEGORY: {err}")
 
+        # Sub-area mapping (optional: defaults to Unspecified if not provided)
+        sub_area_str = "Unspecified"
+        if request.sub_area and request.sub_area.strip():
+            sub_area_str = request.sub_area.strip().title()
+
         row_dict = {
             "carpet_area_sqft": carpet_sqft,
             "has_carpet_area": has_carpet,
@@ -149,6 +154,7 @@ class RequestAdapter:
             "floor_num": floor_num_val,
             "total_floors": total_floors_val,
             "location": canonical_location,
+            "sub_area": sub_area_str,
             "Furnishing": furnishing_canon if furnishing_canon is not None else "Unspecified",
             "Transaction": transaction_canon if transaction_canon is not None else "Unspecified",
             "Status": status_canon if status_canon is not None else "Unspecified",

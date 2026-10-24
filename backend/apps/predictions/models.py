@@ -19,6 +19,7 @@ class Prediction(models.Model):
 
     # Input snapshot
     location = models.CharField(max_length=150, db_index=True)
+    sub_area = models.CharField(max_length=150, null=True, blank=True, db_index=True)
     area_value = models.FloatField()
     area_basis = models.CharField(max_length=20)  # 'CARPET' or 'SUPER'
     bhk = models.IntegerField(null=True, blank=True)

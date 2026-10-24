@@ -42,6 +42,7 @@ export interface LocationsMetadataResponse {
   schema_version: string;
   total_locations: number;
   locations: LocationItem[];
+  city_sub_areas?: Record<string, string[]>;
   area_bases: string[];
   categories: CategoriesMetadata;
 }
@@ -49,6 +50,7 @@ export interface LocationsMetadataResponse {
 export interface PropertyPredictionInput {
   schema_version: '1.0';
   location: string;
+  sub_area?: string | null;
   area_value: number;
   area_basis: 'CARPET' | 'SUPER';
   bhk?: number | null;
@@ -68,6 +70,7 @@ export interface PredictionRecord {
   id: string;
   user_id: string;
   location: string;
+  sub_area?: string | null;
   area_value: number;
   area_basis: string;
   bhk: number | null;

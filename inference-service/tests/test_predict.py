@@ -95,8 +95,22 @@ def test_predict_successful_call_single_predict_invocation(mock_model_env):
     assert data["model_version"] == "test_hist_gb_v1"
     assert data["schema_version"] == "1.0"
     assert "request_id" in data
-    assert mock_model_env.call_count == 1
     assert len(mock_model_env.last_df) == 1
+
+
+def test_predict_successful_with_optional_sub_area(mock_model_env):
+    """Valid request with optional sub_area passes sub_area to pipeline dataframe correctly."""
+    payload = {
+        "schema_version": "1.0",
+        "location": "Thane",
+        "sub_area": "Kothrud",
+        "area_value": 1200.0,
+        "area_basis": "CARPET",
+    }
+    response = client.post("/api/v1/predict", json=payload)
+    assert response.status_code == 200
+    assert mock_model_env.call_count == 1
+    assert mock_model_env.last_df.iloc[0]["sub_area"] == "Kothrud"
 
 
 def test_predict_rejects_incompatible_schema_version(mock_model_env):

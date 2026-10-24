@@ -28,6 +28,7 @@ from sklearn.preprocessing import OneHotEncoder, StandardScaler
 from real_estate_ml_training.clean import (
     parse_area_field,
     convert_area_to_sqft,
+    extract_sub_area_from_title,
 )
 
 # Deterministic regex patterns
@@ -60,6 +61,7 @@ NUMERIC_FEATURE_COLS: list[str] = [
 
 CATEGORICAL_FEATURE_COLS: list[str] = [
     "location",
+    "sub_area",
     "Furnishing",
     "Transaction",
     "Status",
@@ -336,17 +338,39 @@ class PropertyFeatureExtractor(BaseEstimator, TransformerMixin):
             out["total_floors"] = pd.to_numeric(totf_s, errors="coerce") if totf_s is not None else np.nan
 
         # 6. Categorical features with consistent string casting and unknown handling
+        sub_s = self._get_col(X, "sub_area", "locality")
+        title_s = self._get_col(X, "Title", "title")
+        society_s = self._get_col(X, "Society", "society")
+
         for cat_col in CATEGORICAL_FEATURE_COLS:
-            cat_s = self._get_col(X, cat_col)
-            if cat_s is not None:
-                out[cat_col] = (
-                    cat_s.fillna("Unspecified")
-                    .astype(str)
-                    .str.strip()
-                    .replace("", "Unspecified")
-                )
+            if cat_col == "sub_area":
+                if sub_s is not None:
+                    out["sub_area"] = (
+                        sub_s.fillna("Unspecified")
+                        .astype(str)
+                        .str.strip()
+                        .replace("", "Unspecified")
+                        .str.title()
+                    )
+                elif title_s is not None:
+                    soc_list = society_s if society_s is not None else [None] * len(title_s)
+                    out["sub_area"] = [
+                        extract_sub_area_from_title(t, s)
+                        for t, s in zip(title_s, soc_list)
+                    ]
+                else:
+                    out["sub_area"] = "Unspecified"
             else:
-                out[cat_col] = "Unspecified"
+                cat_s = self._get_col(X, cat_col)
+                if cat_s is not None:
+                    out[cat_col] = (
+                        cat_s.fillna("Unspecified")
+                        .astype(str)
+                        .str.strip()
+                        .replace("", "Unspecified")
+                    )
+                else:
+                    out[cat_col] = "Unspecified"
 
         return out[ALL_MODEL_FEATURE_COLS]
 
@@ -368,7 +392,7 @@ def build_preprocessor(scale_numeric: bool = True) -> ColumnTransformer:
 
     cat_pipeline = Pipeline([
         ("imputer", SimpleImputer(strategy="constant", fill_value="Unspecified")),
-        ("encoder", OneHotEncoder(handle_unknown="ignore", sparse_output=False)),
+        ("encoder", OneHotEncoder(min_frequency=10, handle_unknown="ignore", sparse_output=False)),
     ])
 
     return ColumnTransformer(

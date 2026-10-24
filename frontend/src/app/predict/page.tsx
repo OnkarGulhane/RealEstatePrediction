@@ -7,9 +7,11 @@ import { useAuth } from '../../context/AuthContext';
 import { apiFetch, ApiClientError } from '../../lib/api-client';
 import { formatINRLakhCrore, formatPricePerSqFt } from '../../lib/formatters';
 import type { LocationsMetadataResponse, LocationItem, PredictionRecord } from '../../types';
+import staticSubAreasData from '../../data/city_sub_areas.json';
 import {
   Home,
   MapPin,
+  Building2,
   Maximize2,
   Bed,
   Bath,
@@ -24,9 +26,11 @@ export default function PredictPage() {
   // Locations state
   const [locations, setLocations] = useState<LocationItem[]>([]);
   const [locationsLoading, setLocationsLoading] = useState(true);
+  const [citySubAreasMap, setCitySubAreasMap] = useState<Record<string, string[]>>({});
 
   // Form Fields
   const [location, setLocation] = useState('');
+  const [subArea, setSubArea] = useState('');
   const [propertyType, setPropertyType] = useState('Apartment');
   const [areaValue, setAreaValue] = useState<number | ''>(1150);
   const [areaBasis, setAreaBasis] = useState<'CARPET' | 'SUPER'>('CARPET');
@@ -59,11 +63,13 @@ export default function PredictPage() {
     if (typeof window === 'undefined') return;
     const params = new URLSearchParams(window.location.search);
     const qLocation = params.get('location');
+    const qSubArea = params.get('sub_area');
     const qType = params.get('type');
     const qArea = params.get('area');
     const qBhk = params.get('bhk');
 
     if (qLocation) setLocation(qLocation);
+    if (qSubArea) setSubArea(qSubArea);
     if (qType) setPropertyType(qType);
     if (qArea && !Number.isNaN(Number(qArea))) setAreaValue(Number(qArea));
     if (qBhk && !Number.isNaN(Number(qBhk))) setBhk(Number(qBhk));
@@ -75,6 +81,9 @@ export default function PredictPage() {
       try {
         const data = await apiFetch<LocationsMetadataResponse>('/locations/');
         setLocations(data.locations || []);
+        if (data.city_sub_areas) {
+          setCitySubAreasMap(data.city_sub_areas);
+        }
         if (data.locations?.length > 0 && !location) {
           const defaultLoc = data.locations.find((l) => l.name === 'Bangalore') || data.locations[0];
           setLocation(defaultLoc.name);
@@ -87,6 +96,10 @@ export default function PredictPage() {
     }
     load();
   }, [location]);
+
+  // Derived available sub-areas for currently selected city
+  const availableSubAreas: string[] =
+    (location && (citySubAreasMap[location] || (staticSubAreasData as Record<string, string[]>)[location])) || [];
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -114,6 +127,7 @@ export default function PredictPage() {
       const payload = {
         schema_version: '1.0' as const,
         location,
+        sub_area: subArea ? subArea.trim() : null,
         area_value: Number(areaValue),
         area_basis: areaBasis,
         bhk: bhk !== '' ? Number(bhk) : null,
@@ -285,7 +299,10 @@ export default function PredictPage() {
                   <select
                     id="prop-location"
                     value={location}
-                    onChange={(e) => handleFieldChange(setLocation, e.target.value)}
+                    onChange={(e) => {
+                      handleFieldChange(setLocation, e.target.value);
+                      handleFieldChange(setSubArea, '');
+                    }}
                     className="form-select"
                     style={{ paddingLeft: '38px' }}
                     disabled={locationsLoading}
@@ -297,6 +314,46 @@ export default function PredictPage() {
                     ))}
                   </select>
                   <MapPin
+                    size={16}
+                    color="var(--text-secondary)"
+                    style={{ position: 'absolute', left: '12px', top: '16px', pointerEvents: 'none' }}
+                  />
+                </div>
+              </div>
+
+              {/* Sub-Area / Neighborhood */}
+              <div className="form-group">
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                  <label className="form-label" htmlFor="prop-sub-area" style={{ marginBottom: 0 }}>
+                    Neighborhood / Locality (Optional)
+                  </label>
+                  {availableSubAreas.length > 0 && (
+                    <span style={{ fontSize: '0.75rem', color: 'var(--color-primary)', fontWeight: 600 }}>
+                      {availableSubAreas.length} verified localities
+                    </span>
+                  )}
+                </div>
+                <div style={{ position: 'relative' }}>
+                  <select
+                    id="prop-sub-area"
+                    value={subArea}
+                    onChange={(e) => handleFieldChange(setSubArea, e.target.value)}
+                    className="form-select"
+                    style={{ paddingLeft: '38px' }}
+                    disabled={locationsLoading || availableSubAreas.length === 0}
+                  >
+                    <option value="">
+                      {availableSubAreas.length > 0
+                        ? '— Entire City / Select Local Area for Precision —'
+                        : '— City-Wide Model (No Sub-Areas) —'}
+                    </option>
+                    {availableSubAreas.map((sa) => (
+                      <option key={sa} value={sa}>
+                        {sa}
+                      </option>
+                    ))}
+                  </select>
+                  <Building2
                     size={16}
                     color="var(--text-secondary)"
                     style={{ position: 'absolute', left: '12px', top: '16px', pointerEvents: 'none' }}
@@ -568,10 +625,10 @@ export default function PredictPage() {
                   Calculating Valuation...
                 </h3>
                 <p style={{ fontSize: '0.9375rem', color: '#CBD5E1', maxWidth: '360px', margin: '0 auto 20px', lineHeight: 1.55 }}>
-                  Evaluating {areaValue || 1150} sq.ft. {propertyType} in {location || 'selected market'} against our verified machine learning model...
+                  Evaluating {areaValue || 1150} sq.ft. {propertyType} in {subArea ? `${location} (${subArea})` : location || 'selected market'} against our verified machine learning model...
                 </p>
                 <div style={{ display: 'inline-block', fontSize: '0.75rem', color: 'var(--color-gold)', letterSpacing: '0.06em', textTransform: 'uppercase', fontWeight: 600 }}>
-                  Model: HistGradientBoosting (Holdout R² = 0.7104)
+                  Model: HistGradientBoosting (Holdout R² = 0.7351)
                 </div>
               </div>
             ) : result ? (
@@ -699,7 +756,7 @@ export default function PredictPage() {
                     <div>
                       <div style={{ fontSize: '0.75rem', color: '#94A3B8' }}>Location</div>
                       <div style={{ fontSize: '0.9375rem', fontWeight: 600, color: '#FFFFFF' }}>
-                        {result.location}
+                        {result.sub_area ? `${result.location} • ${result.sub_area}` : result.location}
                       </div>
                     </div>
                   </div>

@@ -198,14 +198,14 @@ class TestFeatureExtractionRules:
         """Verifies that ambiguous parking (>20 -> NaN) is imputed using the train partition median only."""
         # Train partition with known parking counts: 2.0, 2.0, 2.0 -> median is 2.0
         train_raw = pd.DataFrame([
-            {"location": "pune", "Car Parking": "2 Covered", "Furnishing": "Furnished", "Transaction": "Resale", "Status": "Ready to Move", "facing": "East", "Ownership": "Freehold", "carpet_area_sqft": 1000.0, "super_area_sqft": 1200.0, "has_carpet_area": 1, "carpet_area_unit_verified": 1, "has_super_area": 0, "super_area_unit_verified": 0, "bhk": 2.0, "bathroom": 2.0, "bathroom_is_gt_10": 0, "balcony": 1.0, "balcony_is_gt_10": 0, "parking_spaces": 2.0, "has_parking": 1, "parking_count_ambiguous": 0, "floor_num": 2.0, "total_floors": 4.0},
-            {"location": "pune", "Car Parking": "2 Covered", "Furnishing": "Furnished", "Transaction": "Resale", "Status": "Ready to Move", "facing": "East", "Ownership": "Freehold", "carpet_area_sqft": 1000.0, "super_area_sqft": 1200.0, "has_carpet_area": 1, "carpet_area_unit_verified": 1, "has_super_area": 0, "super_area_unit_verified": 0, "bhk": 2.0, "bathroom": 2.0, "bathroom_is_gt_10": 0, "balcony": 1.0, "balcony_is_gt_10": 0, "parking_spaces": 2.0, "has_parking": 1, "parking_count_ambiguous": 0, "floor_num": 2.0, "total_floors": 4.0},
-            {"location": "pune", "Car Parking": "2 Covered", "Furnishing": "Furnished", "Transaction": "Resale", "Status": "Ready to Move", "facing": "East", "Ownership": "Freehold", "carpet_area_sqft": 1000.0, "super_area_sqft": 1200.0, "has_carpet_area": 1, "carpet_area_unit_verified": 1, "has_super_area": 0, "super_area_unit_verified": 0, "bhk": 2.0, "bathroom": 2.0, "bathroom_is_gt_10": 0, "balcony": 1.0, "balcony_is_gt_10": 0, "parking_spaces": 2.0, "has_parking": 1, "parking_count_ambiguous": 0, "floor_num": 2.0, "total_floors": 4.0},
+            {"location": "pune", "sub_area": "Kothrud", "Car Parking": "2 Covered", "Furnishing": "Furnished", "Transaction": "Resale", "Status": "Ready to Move", "facing": "East", "Ownership": "Freehold", "carpet_area_sqft": 1000.0, "super_area_sqft": 1200.0, "has_carpet_area": 1, "carpet_area_unit_verified": 1, "has_super_area": 0, "super_area_unit_verified": 0, "bhk": 2.0, "bathroom": 2.0, "bathroom_is_gt_10": 0, "balcony": 1.0, "balcony_is_gt_10": 0, "parking_spaces": 2.0, "has_parking": 1, "parking_count_ambiguous": 0, "floor_num": 2.0, "total_floors": 4.0},
+            {"location": "pune", "sub_area": "Kothrud", "Car Parking": "2 Covered", "Furnishing": "Furnished", "Transaction": "Resale", "Status": "Ready to Move", "facing": "East", "Ownership": "Freehold", "carpet_area_sqft": 1000.0, "super_area_sqft": 1200.0, "has_carpet_area": 1, "carpet_area_unit_verified": 1, "has_super_area": 0, "super_area_unit_verified": 0, "bhk": 2.0, "bathroom": 2.0, "bathroom_is_gt_10": 0, "balcony": 1.0, "balcony_is_gt_10": 0, "parking_spaces": 2.0, "has_parking": 1, "parking_count_ambiguous": 0, "floor_num": 2.0, "total_floors": 4.0},
+            {"location": "pune", "sub_area": "Kothrud", "Car Parking": "2 Covered", "Furnishing": "Furnished", "Transaction": "Resale", "Status": "Ready to Move", "facing": "East", "Ownership": "Freehold", "carpet_area_sqft": 1000.0, "super_area_sqft": 1200.0, "has_carpet_area": 1, "carpet_area_unit_verified": 1, "has_super_area": 0, "super_area_unit_verified": 0, "bhk": 2.0, "bathroom": 2.0, "bathroom_is_gt_10": 0, "balcony": 1.0, "balcony_is_gt_10": 0, "parking_spaces": 2.0, "has_parking": 1, "parking_count_ambiguous": 0, "floor_num": 2.0, "total_floors": 4.0},
         ])
 
         # Test partition with ambiguous parking: '34 Covered' -> NaN
         test_raw = pd.DataFrame([{
-            "location": "pune", "Car Parking": "34 Covered", "Furnishing": "Furnished", "Transaction": "Resale", "Status": "Ready to Move", "facing": "East", "Ownership": "Freehold", "carpet_area_sqft": 1000.0, "super_area_sqft": 1200.0, "has_carpet_area": 1, "carpet_area_unit_verified": 1, "has_super_area": 0, "super_area_unit_verified": 0, "bhk": 2.0, "bathroom": 2.0, "bathroom_is_gt_10": 0, "balcony": 1.0, "balcony_is_gt_10": 0, "parking_spaces": np.nan, "has_parking": 1, "parking_count_ambiguous": 1, "floor_num": 2.0, "total_floors": 4.0
+            "location": "pune", "sub_area": "Kothrud", "Car Parking": "34 Covered", "Furnishing": "Furnished", "Transaction": "Resale", "Status": "Ready to Move", "facing": "East", "Ownership": "Freehold", "carpet_area_sqft": 1000.0, "super_area_sqft": 1200.0, "has_carpet_area": 1, "carpet_area_unit_verified": 1, "has_super_area": 0, "super_area_unit_verified": 0, "bhk": 2.0, "bathroom": 2.0, "bathroom_is_gt_10": 0, "balcony": 1.0, "balcony_is_gt_10": 0, "parking_spaces": np.nan, "has_parking": 1, "parking_count_ambiguous": 1, "floor_num": 2.0, "total_floors": 4.0
         }])
 
         pre = build_preprocessor(scale_numeric=False)
@@ -307,6 +307,7 @@ class TestModelPipelinesAndSmoke:
     def test_preprocessing_handles_unknown_categories(self):
         train_df = pd.DataFrame([{
             "location": "pune",
+            "sub_area": "Kothrud",
             "Furnishing": "Furnished",
             "Transaction": "Resale",
             "Status": "Ready to Move",
@@ -332,6 +333,7 @@ class TestModelPipelinesAndSmoke:
 
         test_df = pd.DataFrame([{
             "location": "unknown_future_city",
+            "sub_area": "unknown_future_sub_area",
             "Furnishing": "brand_new_category",
             "Transaction": "Other",
             "Status": "UnknownStatus",

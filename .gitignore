@@ -49,7 +49,9 @@ yarn-error.log*
 .pnpm-debug.log*
 
 # ML Data & Artifacts (Raw listing dataset and serialized models)
-data/
+/data/
+!backend/apps/properties/data/**
+!frontend/src/data/**
 *.csv
 ml/training/data/raw/*
 !ml/training/data/raw/.gitkeep

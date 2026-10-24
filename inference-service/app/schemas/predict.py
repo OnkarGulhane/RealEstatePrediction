@@ -19,6 +19,10 @@ class PropertyPredictionRequest(BaseModel):
         min_length=1,
         description="Supported Indian residential property location / city.",
     )
+    sub_area: Optional[str] = Field(
+        default=None,
+        description="Specific sub-area, neighborhood, or locality within the selected city (e.g. Kothrud, Baner, Andheri West).",
+    )
     area_value: float = Field(
         ...,
         gt=0,

@@ -84,6 +84,33 @@ class TestPredictions:
         assert db_record.user == user_a
         assert float(db_record.estimated_price_inr) == 8316392.49
 
+    @patch("apps.predictions.views.InferenceClient.predict")
+    def test_prediction_with_sub_area_persists_and_returns(
+        self, mock_predict, api_client, user_a, valid_payload
+    ):
+        mock_predict.return_value = {
+            "estimated_price_inr": 9200000.00,
+            "currency": "INR",
+            "model_version": "real_estate_hist_gradient_boosting_log_tuned_v1",
+            "schema_version": "1.0",
+        }
+        payload = dict(valid_payload)
+        payload["location"] = "Pune"
+        payload["sub_area"] = "Kothrud"
+
+        api_client.force_authenticate(user=user_a)
+        url = reverse("prediction-list-create")
+        response = api_client.post(url, payload, format="json")
+
+        assert response.status_code == 201
+        data = response.json()
+        assert data["property_summary"]["location"] == "Pune"
+        assert data["property_summary"]["sub_area"] == "Kothrud"
+
+        db_rec = Prediction.objects.get(id=data["id"])
+        assert db_rec.location == "Pune"
+        assert db_rec.sub_area == "Kothrud"
+
     def test_prediction_rejects_missing_required_fields(self, api_client, user_a):
         api_client.force_authenticate(user=user_a)
         url = reverse("prediction-list-create")

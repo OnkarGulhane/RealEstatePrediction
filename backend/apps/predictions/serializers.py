@@ -14,6 +14,14 @@ class PropertyPredictionInputSerializer(serializers.Serializer):
         max_length=150,
         help_text="Supported Indian residential property location / city."
     )
+    sub_area = serializers.CharField(
+        required=False,
+        allow_null=True,
+        allow_blank=True,
+        default=None,
+        max_length=150,
+        help_text="Optional hyper-local neighborhood / sub-area (e.g. Kothrud, Baner, Wakad)."
+    )
     area_value = serializers.FloatField(
         required=True,
         min_value=0.0001,
@@ -117,6 +125,7 @@ class PredictionResponseSerializer(serializers.ModelSerializer):
     def get_property_summary(self, obj: Prediction) -> dict:
         return {
             "location": obj.location,
+            "sub_area": obj.sub_area,
             "area_value": obj.area_value,
             "area_basis": obj.area_basis,
             "bhk": obj.bhk,

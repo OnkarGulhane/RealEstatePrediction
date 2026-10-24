@@ -234,7 +234,12 @@ export default function DashboardPage() {
                         {formatDateIST(p.created_at)}
                       </td>
                       <td style={{ padding: '16px 20px', fontWeight: 600, color: 'var(--color-dark)' }}>
-                        {p.location}
+                        <div>{p.location}</div>
+                        {p.sub_area && (
+                          <div style={{ fontSize: '0.75rem', fontWeight: 500, color: 'var(--color-gold-warm, #B8860B)', marginTop: '2px' }}>
+                            {p.sub_area}
+                          </div>
+                        )}
                       </td>
                       <td style={{ padding: '16px 20px', color: 'var(--text-secondary)', fontSize: '0.875rem' }}>
                         {p.bhk ? `${p.bhk} BHK` : '—'} • {p.area_value} sq.ft. ({p.area_basis})
@@ -315,7 +320,7 @@ export default function DashboardPage() {
               </span>
 
               <h2 className="font-display" style={{ fontSize: '1.5rem', fontWeight: 600, color: 'var(--color-dark)', marginBottom: '4px' }}>
-                {selectedRecord.location} Valuation
+                {selectedRecord.sub_area ? `${selectedRecord.location} (${selectedRecord.sub_area})` : selectedRecord.location} Valuation
               </h2>
               <p style={{ fontSize: '0.8125rem', color: 'var(--text-muted)', marginBottom: '20px' }}>
                 Generated on {formatDateIST(selectedRecord.created_at)} • Record ID: {selectedRecord.id.slice(0, 8)}...
@@ -351,6 +356,11 @@ export default function DashboardPage() {
                   marginBottom: '24px',
                 }}
               >
+                {selectedRecord.sub_area && (
+                  <div style={{ gridColumn: 'span 2' }}>
+                    <span style={{ color: 'var(--text-muted)' }}>Neighborhood:</span> <strong>{selectedRecord.sub_area}</strong>
+                  </div>
+                )}
                 <div><span style={{ color: 'var(--text-muted)' }}>Area:</span> <strong>{selectedRecord.area_value} sq.ft.</strong></div>
                 <div><span style={{ color: 'var(--text-muted)' }}>Area Basis:</span> <strong>{selectedRecord.area_basis}</strong></div>
                 <div><span style={{ color: 'var(--text-muted)' }}>Layout:</span> <strong>{selectedRecord.bhk ? `${selectedRecord.bhk} BHK` : '—'}</strong></div>

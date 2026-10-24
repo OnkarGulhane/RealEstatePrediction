@@ -172,12 +172,13 @@ def test_adapter_bathroom_interval_gt_10(dummy_categories, dummy_raw_map):
     assert df.loc[0, "Balcony"] == 2.0
 
 
-def test_adapter_extracts_exact_22_features_in_order(dummy_categories, dummy_raw_map):
+def test_adapter_extracts_exact_23_features_in_order(dummy_categories, dummy_raw_map):
     from real_estate_ml_training.features import PropertyFeatureExtractor, ALL_MODEL_FEATURE_COLS
 
     req = PropertyPredictionRequest(
         schema_version="1.0",
         location="Thane",
+        sub_area="Kothrud",
         area_value=1200.0,
         area_basis=AreaBasisEnum.CARPET,
         bhk=2,
@@ -196,9 +197,9 @@ def test_adapter_extracts_exact_22_features_in_order(dummy_categories, dummy_raw
     ext = PropertyFeatureExtractor()
     out = ext.transform(df)
 
-    # 1. Exact 22-feature column order
+    # 1. Exact 23-feature column order
     assert list(out.columns) == ALL_MODEL_FEATURE_COLS
-    assert len(out.columns) == 22
+    assert len(out.columns) == 23
 
     # 2. Key feature checks
     row = out.iloc[0]

@@ -168,7 +168,7 @@ def test_loader_get_public_metadata_allow_list(tmp_path):
     assert pub is not None
     assert pub["model_id"] == "test_candidate_v1"
     assert pub["target"]["unit"] == "INR"
-    assert pub["features"]["total_features"] == 22
+    assert pub["features"]["total_features"] == 23
     assert pub["test_evaluation"]["holdout_mae_inr"] == 2693927.27
     # Verify no secret or internal path leakage
     assert "secret_token" not in pub

@@ -39,6 +39,26 @@ EXCLUDED_BLANK_COLUMNS: list[str] = ["Dimensions", "Plot Area"]
 EXCLUDED_LEAKAGE_COLUMNS: list[str] = ["Description", "Price (in rupees)"]
 
 
+def extract_sub_area_from_title(title: Any, society: Any = None) -> str:
+    """
+    Extracts a clean sub-area / locality name from a listing Title and Society.
+    Returns stripped, title-cased sub_area or 'Unspecified' if missing.
+    """
+    if not isinstance(title, str) or not title.strip():
+        return "Unspecified"
+    t = title
+    if isinstance(society, str) and society.strip():
+        t = t.replace(society, " ")
+    t = re.sub(
+        r"^\s*\d+\s*(?:to\s*\d+\s*)?(?:BHK|bhk)?\s*(?:Ready to Occupy|Under Construction)?\s*(?:Flat|Builder Floor|House|Apartment|Villa|Penthouse|Studio Apartment)?\s*(?:for sale)?\s*(?:in)?\s*",
+        "",
+        t,
+        flags=re.IGNORECASE,
+    )
+    t = re.sub(r"^\s*in\s+", "", t, flags=re.IGNORECASE)
+    cleaned = re.sub(r"\s+", " ", t).strip(" ,-.")
+    return cleaned.title() if cleaned else "Unspecified"
+
 
 def parse_target_price(val: Any) -> dict[str, Any]:
     """
@@ -256,6 +276,13 @@ def prepare_property_data(
         if col in cols:
             prepared[col] = df[col].values
 
+    # Deterministic sub-area / locality extraction from Title and Society
+    titles = df.get("Title", [None] * total_input_rows)
+    societies = df.get("Society", [None] * total_input_rows)
+    prepared["sub_area"] = [
+        extract_sub_area_from_title(t, s) for t, s in zip(titles, societies)
+    ]
+
     # Accounting for area overlap
     has_carpet = prepared["carpet_area_val"].notnull()
     has_super = prepared["super_area_val"].notnull()
@@ -411,6 +438,17 @@ def build_phase2_deduplicated_view(
     ]:
         if col in merged.columns and col not in output_cols:
             output_cols.append(col)
+
+    # Sub-area extraction
+    merged["sub_area"] = [
+        extract_sub_area_from_title(t, s)
+        for t, s in zip(
+            merged.get("Title", [None] * valid_unique_configurations),
+            merged.get("Society", [None] * valid_unique_configurations),
+        )
+    ]
+    if "sub_area" not in output_cols:
+        output_cols.append("sub_area")
 
     dedup_df = merged[output_cols].copy()
 

@@ -659,6 +659,10 @@ components:
         location:
           type: string
           example: Mumbai
+        sub_area:
+          type: string
+          nullable: true
+          example: Bandra West
         area_value:
           type: number
           format: float
@@ -741,6 +745,10 @@ components:
           format: uuid
         location:
           type: string
+        sub_area:
+          type: string
+          nullable: true
+          example: Bandra West
         area_value:
           type: number
         area_basis:
@@ -840,6 +848,13 @@ components:
                 type: string
               normalized:
                 type: string
+        city_sub_areas:
+          type: object
+          additionalProperties:
+            type: array
+            items:
+              type: string
+          description: Mapping of canonical city name to sorted list of known sub-areas and neighborhoods.
         area_bases:
           type: array
           items:

@@ -37,8 +37,8 @@ def test_real_artifact_smoke():
     meta_data = res_meta.json()
     assert meta_data["model_id"] == "real_estate_hist_gradient_boosting_log_tuned_v1"
     assert meta_data["target"]["unit"] == "INR"
-    assert meta_data["features"]["total_features"] == 22
-    assert meta_data["test_evaluation"]["holdout_mae_inr"] == 2693927.27
+    assert meta_data["features"]["total_features"] == 23
+    assert meta_data["test_evaluation"]["holdout_mae_inr"] == 2560107.82
 
     # 4. Predict for a legitimate property: 2 BHK, 1200 sqft Carpet in Thane
     payload = {

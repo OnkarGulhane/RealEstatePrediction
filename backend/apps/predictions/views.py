@@ -67,6 +67,7 @@ class PredictionListCreateView(APIView):
         prediction = Prediction.objects.create(
             user=request.user,
             location=valid_input["location"],
+            sub_area=valid_input.get("sub_area"),
             area_value=valid_input["area_value"],
             area_basis=valid_input["area_basis"],
             bhk=valid_input.get("bhk"),
