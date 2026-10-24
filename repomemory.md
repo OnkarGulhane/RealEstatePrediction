@@ -3,9 +3,9 @@
 > **Product:** Real Estate Price Prediction Platform — India  
 > **Repository:** `OnkarGulhane/RealEstatePrediction`  
 > **Architecture:** Monorepo with decoupled services (Next.js Frontend, Django REST Application Backend, FastAPI Inference Microservice, Offline ML Pipeline)  
-> **Last Updated:** 24 October 2026 (12:20 PM IST)  
-> **Published Commit:** [`bdc3f7b`](https://github.com/OnkarGulhane/RealEstatePrediction/commit/bdc3f7b) on branch `main` (`origin/main`)  
-> **Current Status:** Phases 0–7 **APPROVED & VERIFIED** | Phase 8 (Online Production Deployment) **NEXT IN LINE**
+> **Last Updated:** 24 October 2026 (02:55 PM IST)  
+> **Published Commit:** [`1594fe9`](https://github.com/OnkarGulhane/RealEstatePrediction/commit/1594fe9) on branch `main` (`origin/main`)  
+> **Current Status:** Phases 0–7 + Hyper-Local Sub-Area Neighborhood Prediction Engine **APPROVED & VERIFIED** | Phase 8 (Online Production Deployment) **READY TO COMMENCE**
 
 ---
 
@@ -17,6 +17,7 @@
 │                               FRONTEND LAYER (Phase 5 - Next.js)                       │
 │  - Next.js 16.4.2 App Router (SSG/SSR)           - TypeScript 5.7                      │
 │  - Ivory Luxury Design System (Forest Green/Gold)- Interactive Valuation Calculator     │
+│  - Cascading City -> Neighborhood Sub-Area Dropdown (81 Cities, 2,800+ Localities)    │
 │  - User Auth & JWT Token Refresh Flow            - Historical Predictions Explorer     │
 │  - Admin Analytics & Model Metadata Visualizer   - Responsive Mobile/Desktop Design    │
 └─────────────────────────────────────────▲──────────────────────────────────────────────┘
@@ -27,8 +28,8 @@
 │  ┌──────────────────────────────────────────────────────────────────────────────────┐  │
 │  │                              API ROUTING & APPS                                  │  │
 │  │  apps.accounts     (Register, Login, CSRF, Refresh, Logout, User Profile, Seed)  │  │
-│  │  apps.properties   (Supported Locations Metadata, City Catalog)                  │  │
-│  │  apps.predictions  (Prediction Orchestrator, Inference HTTP Client, History)     │  │
+│  │  apps.properties   (81 Cities & Sub-Area Catalogs: city_sub_areas.json)          │  │
+│  │  apps.predictions  (Prediction Orchestrator, Sub-Area DB Migration, Inference)  │  │
 │  │  apps.analytics    (Admin Summary, User Audit, Prediction Records, Reports)      │  │
 │  │  apps.common       (Custom RFC 7807 Error Shapes, DRF Exception Handlers)        │  │
 │  └──────────────────────────────────────▲───────────────────────────────────────────┘  │
@@ -38,11 +39,12 @@
 │  │  - Django CSRFCheck Middleware on Cookie-backed endpoints (Refresh, Logout)      │  │
 │  │  - SimpleJWT In-Memory Access + Cookie Rotation & Blacklisting (WhiteNoise/CORS) │  │
 │  │  - Explicit CORS/CSRF Whitelist (http://localhost:3000, http://127.0.0.1:3000)   │  │
+│  │  - Python-Dotenv base loader for development environment synchronization         │  │
 │  └──────────────────────────────────────▲───────────────────────────────────────────┘  │
 │                                         │                                              │
 │  ┌──────────────────────────────────────▼───────────────────────────────────────────┐  │
 │  │                               PERSISTENCE LAYER                                  │  │
-│  │  - Local: SQLite (backend/db.sqlite3) with 32 migrations                         │  │
+│  │  - Local: SQLite (backend/db.sqlite3) with 33 migrations (incl 0002_sub_area)     │  │
 │  │  - Production: PostgreSQL strictly enforced (config.settings.production)          │  │
 │  └──────────────────────────────────────┬───────────────────────────────────────────┘  │
 └─────────────────────────────────────────┼──────────────────────────────────────────────┘
@@ -51,17 +53,17 @@
                                           │  Bounded Timeout: 3.0s | Retries: 2
 ┌─────────────────────────────────────────▼──────────────────────────────────────────────┐
 │                    INFERENCE SERVICE (Phase 3 - FastAPI 0.115.14)                      │
-│  - App Routes: /health/live, /health/ready, /predict, /metadata/model                  │
+│  - App Routes: /health/live, /health/ready, /api/v1/predict, /api/v1/model/metadata   │
 │  - Artifact Loader: Validates metadata hash, schema compatibility, target INR unit   │
-│  - Feature Adapter: Transforms Carpet/Super Area, Treatment B parking, Floor mapping    │
-│  - LightGBM Pipeline: 22 engineered features, strictly positive INR output checks     │
+│  - Feature Adapter: Maps 23 features (incl sub_area), Treatment B parking, Floors    │
+│  - Tuned Model Pipeline: HistGradientBoostingRegressor (Test R²=0.7351, MAE=25.60L) │
 └─────────────────────────────────────────▲──────────────────────────────────────────────┘
                                           │  Joblib Serialized Artifact + Metadata JSON
 ┌─────────────────────────────────────────┴──────────────────────────────────────────────┐
 │                         OFFLINE ML PIPELINE (Phase 1 & 2)                              │
-│  - Clean Dataset: 177,847 continuous INR asking price rows, 65,255 unique configs     │
-│  - Treatment B: Raw 21-50 parking spaces preserved, missing median imputed             │
-│  - Trained Model: LightGBM Regressor (R² = 0.8870, MAE = 12.33 Lakhs INR)              │
+│  - Clean Dataset: 187,531 raw listings, 65,255 unique supervised configs             │
+│  - Sub-Area Extraction: 81 Indian cities, ~800 frequent localities (min_freq=10)       │
+│  - Trained Model: HistGradientBoosting (Tuned Log-Target, R² = 0.7351, MAE = 25.60L)  │
 │  - Stored Artifacts: ml/training/experiments/phase2/ + inference-service/artifacts/   │
 └────────────────────────────────────────────────────────────────────────────────────────┘
 ```
@@ -139,25 +141,31 @@ RealEstatePrediction/
 
 ### 3.3 Database Architecture & Isolation
 - **Custom User Model:** `apps.accounts.models.User` (Email primary key, case-insensitive unique constraint, role flags for normal user vs admin).
-- **Prediction Record Model:** `apps.predictions.models.Prediction` stores complete input parameters snapshot (carpet/super area, BHK, baths, parking, status), predicted price in INR, currency, model version, and user foreign key.
-- **Object-Level Ownership:** Non-admin users can only view or delete their own predictions (`/api/v1/predictions/history/`). Admins can query system-wide predictions with date range filters and aggregations (`/api/v1/analytics/predictions/`).
+- **Prediction Record Model:** `apps.predictions.models.Prediction` stores complete input parameters snapshot (carpet/super area, BHK, baths, parking, status), optional hyper-local `sub_area`, predicted price in INR, currency, model version, and user foreign key. Migration `0002_prediction_sub_area.py` applied.
+- **Object-Level Ownership:** Non-admin users can only view or delete their own predictions (`/api/v1/predictions/`). Admins can query system-wide predictions with date range filters and aggregations (`/api/v1/analytics/predictions/`).
+
+### 3.4 Hyper-Local Sub-Area Locality Pricing Engine (Phase 7.5 Extension)
+- **High-Cardinality Resolution:** Extracted 2,800+ neighborhood variations across 81 cities from `Title` and `Society`. Implemented `OneHotEncoder(min_frequency=10, handle_unknown="ignore")` to preserve ~800 statistically robust localities while mapping long-tail variants to an infrequent bucket.
+- **Model Promotion & Accuracy:** Retraining improved Test $R^2$ from 0.7104 to **0.7351** and reduced holdout MAE to **INR 25.60 Lakhs** (+59.05% improvement over baseline).
+- **Backward Compatibility:** `sub_area` is optional (`nullable: true`) in all contracts (`contracts/inference-api.yaml`, `contracts/application-api.yaml`). Requests specifying only city continue to receive city-wide general predictions without regression.
+- **Cascading Client Autocomplete:** Next.js UI queries `/api/v1/locations/` which provides canonical city catalogs (`backend/apps/properties/data/city_sub_areas.json`). Selecting a city instantly cascades verified neighborhood choices with responsive search.
 
 ---
 
-## 4. Comprehensive Test Suite & Verification Matrix (192 Automated Tests)
+## 4. Comprehensive Test Suite & Verification Matrix (194 Automated Tests)
 
 Every component is governed by automated regression tests:
 
 | Suite | Component | Test Count | Key Invariants Verified |
 |---|---|---|---|
 | **Frontend Suite** | Next.js 16 | **12 passed** | API base URL trimming, in-memory ephemeral access token, CSRF masking, RFC 7807 error envelopes, Lakhs/Crores currency formatters |
-| **Backend Suite** | Django 5.2 | **46 passed** | CSRF enforcement on cookies, JWT rotation/blacklisting, user registration, property metadata, prediction persistence, admin security gates, demo seeding |
-| **Inference Suite** | FastAPI | **43 passed** | Liveness/readiness probes, schema version matching, Treatment B parking logic, carpet/super area conversion, invalid floor rejection, real artifact smoke tests |
-| **ML Pipeline Suite** | Scikit-Learn / LightGBM | **75 passed** | 22-feature column transformer, missing value median imputation, unknown category encoding, non-negative prediction output |
-| **Live E2E Suite** | Python Requests | **16 passed** | Live coordination across ports 3000, 8000, 8001; auth registration, valuation pipeline, privacy isolation (404), RBAC guards (403), logout blacklist |
+| **Backend Suite** | Django 5.2 | **47 passed** | CSRF enforcement on cookies, JWT rotation/blacklisting, user registration, property metadata, prediction persistence, sub-area persistence & serialization, admin security gates, demo seeding |
+| **Inference Suite** | FastAPI | **44 passed** | Liveness/readiness probes, schema version matching, sub-area feature mapping, 23-feature schema order, Treatment B parking logic, carpet/super area conversion, invalid floor rejection, real artifact smoke tests |
+| **ML Pipeline Suite** | Scikit-Learn / LightGBM | **75 passed** | 23-feature column transformer (incl sub_area), missing value median imputation, unknown category encoding, non-negative prediction output |
+| **Live E2E Suite** | Python Requests | **16 passed** | Live coordination across ports 3000, 8000, 8001; auth registration, valuation pipeline with sub-areas, privacy isolation (404), RBAC guards (403), logout blacklist |
 | **Contract Suite** | OpenAPI 3.0.3 | **2 validated** | Zero specification errors across both `application-api.yaml` and `inference-api.yaml` |
-| **Database Suite** | Django Migrations | **32 applied** | Clean zero-state database initialization without migration graph errors |
-| **Total Automated Tests** | Across Monorepo | **192 passed** | **100% Passing (0 failures, 0 regressions)** |
+| **Database Suite** | Django Migrations | **33 applied** | Clean zero-state database initialization without migration graph errors (incl 0002_prediction_sub_area) |
+| **Total Automated Tests** | Across Monorepo | **194 passed** | **100% Passing (0 failures, 0 regressions)** |
 
 ---
 

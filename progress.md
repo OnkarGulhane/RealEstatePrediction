@@ -1,36 +1,31 @@
 # Real Estate Price Prediction Platform — Progress & Status Tracker
 
 > **Repository:** `OnkarGulhane/RealEstatePrediction`  
-> **Last Updated:** 24 October 2026 (12:22 PM IST)  
-> **Current Status:** Phases 0, 1, 2, 3, 4, 5, 6, 7 **APPROVED & FULLY INTEGRATED** | Phase 8 **READY TO BEGIN**
+> **Last Updated:** 24 October 2026 (02:55 PM IST)  
+> **Current Status:** Phases 0–7 + Hyper-Local Sub-Area Neighborhood Prediction **APPROVED & INTEGRATED** | Phase 8 **READY TO COMMENCE**
 
 ---
 
 ## 1. Executive Summary & Accomplishments
 
-**Phase 7 (Reproducible Local Release & Runbook)** has been completed, tested, and verified across all components:
+**Phase 7 (Reproducible Local Release & Runbook) & Hyper-Local Sub-Area Neighborhood Feature** have been fully implemented, tested, and verified across all components:
 
-### Key Milestones Completed in Phase 7:
+### Key Milestones Completed:
 1. **Multi-Container Dockerization:**
-   - Authored production-ready `frontend/Dockerfile` (Node 20 Alpine, multi-stage standalone build), `backend/Dockerfile` (Python 3.11 slim, non-root user, Gunicorn support, startup migration wrapper), and `inference-service/Dockerfile` (FastAPI + Uvicorn + LightGBM model pipeline).
-   - Upgraded [compose.yaml](compose.yaml) to a fully runnable multi-service specification with automated health checks, service dependencies (`inference` -> `backend` -> `frontend`), and optional PostgreSQL profile (`--profile postgres`).
+   - Production-ready `frontend/Dockerfile`, `backend/Dockerfile` (startup migration wrapper), and `inference-service/Dockerfile`.
+   - Upgraded [compose.yaml](compose.yaml) multi-service orchestration with automated health probes and optional PostgreSQL profile.
 2. **One-Command Automated Demo Data Seeding:**
-   - Implemented `backend/apps/accounts/management/commands/seed_demo_data.py` to seed:
-     - System Admin: `admin@realestate.local` (`AdminPassword123!`)
-     - Standard User: `demo@realestate.local` (`DemoPassword123!`)
-     - 5 realistic historical property predictions across Mumbai, Bangalore, Pune, Delhi, and Hyderabad.
-   - Tested for 100% idempotency with automated unit test (`backend/tests/test_seed_data.py`).
-3. **Cross-Platform Reproducible Setup & Test Scripts:**
-   - Enhanced `scripts/setup_dev.ps1` and created `scripts/setup_dev.sh` to automatically verify system prerequisites, setup virtual environments, copy `.env.example`, copy model artifacts, apply migrations, and seed demo accounts.
-   - Created `scripts/run_all_tests.ps1` and `scripts/run_all_tests.sh` to execute the full monorepo test suite with a single command.
-4. **Comprehensive Runbook & Documentation:**
-   - Created [docs/RUNBOOK.md](docs/RUNBOOK.md) covering local quick starts (native & Docker), port allocations, seeded credentials, automated test commands, and operational troubleshooting FAQs (PowerShell execution policies, port conflicts, CSRF handling).
-   - Updated [README.md](README.md) and [repomemory.md](repomemory.md) to reflect Phase 7 completion and 192 automated passing tests.
-5. **Automated Verification:**
-   - **Total Monorepo Automated Tests: 192 / 192 Passing (100%)**
+   - `backend/apps/accounts/management/commands/seed_demo_data.py` seeds admin (`admin@realestate.local`) and user (`demo@realestate.local`).
+3. **Hyper-Local Sub-Area Neighborhood Pricing Engine:**
+   - Extracted 2,800+ neighborhoods across 81 Indian cities from 187,531 raw listings.
+   - Retrained HistGradientBoostingRegressor pipeline ($R^2 = 0.7351$, MAE = 25.60 Lakhs INR).
+   - Added `sub_area` column to `Prediction` model (`0002_prediction_sub_area.py`).
+   - Integrated cascading City -> Sub-Area dynamic dropdown in Next.js UI (`/predict`).
+4. **Comprehensive Automated Verification:**
+   - **Total Monorepo Automated Tests: 194 / 194 Passing (100%)**
    - Frontend: 12 tests passed
-   - Backend: 46 tests passed (including new seed command test)
-   - FastAPI Inference: 43 tests passed
+   - Backend: 47 tests passed (including sub_area persistence test)
+   - FastAPI Inference: 44 tests passed (including sub_area feature test)
    - ML Pipeline: 75 tests passed
    - Live E2E Integration: 16 tests passed
 
